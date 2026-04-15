@@ -552,7 +552,7 @@ const comparisonData = [
   }
 ];
 
-const STORAGE_KEY = "pricepilot-tracked-catalog-v2";
+const STORAGE_KEY = "pricepilot-tracked-catalog-v3";
 const providerPalette = {
   Amazon: "#ffb74d",
   "Best Buy": "#7db0ff",
@@ -568,20 +568,315 @@ const providerPalette = {
   "iCloud+": "#b39ddb"
 };
 
-const defaultProviderVisibility = {
-  Amazon: true,
-  "Best Buy": true,
-  Walmart: true,
-  Target: true,
-  "AT&T Fiber": true,
-  Spectrum: true,
-  "Verizon 5G Home": true,
-  Xfinity: true,
-  "Google One": true,
-  Dropbox: true,
-  "Microsoft 365": true,
-  "iCloud+": true
-};
+const defaultProviderVisibility = comparisonData
+  .flatMap((item) => item.providers.map((provider) => provider.name))
+  .reduce((visibilityMap, providerName) => {
+    visibilityMap[providerName] = true;
+    return visibilityMap;
+  }, {});
+
+Object.assign(providerPalette, {
+  "Northside Toyota": "#f48fb1",
+  "Capital City Toyota": "#ce93d8",
+  "Hill Country Toyota": "#80deea",
+  "Lone Star Mortgage": "#90caf9",
+  "River City Bank": "#ffab91",
+  "Hill Country Credit Union": "#a5d6a7"
+});
+
+comparisonData.push(
+  {
+    id: "organic-strawberries",
+    name: "Organic Strawberries 16 oz",
+    type: "product",
+    category: "Grocery",
+    matchMode: "Same item",
+    notes: "Perishable grocery tracking with reorder suggestions, sale alerts, and bulk-break comparison.",
+    keywords: ["strawberries", "fruit", "grocery", "perishable", "fresh", "produce"],
+    reorder: { cadenceDays: 7, reminderWindowDays: 2, saleThreshold: 4.49, perishability: "High" },
+    bulkTiers: [
+      { minQty: 2, label: "2 for $9", effectivePrice: 4.5 },
+      { minQty: 4, label: "4 for $16", effectivePrice: 4 }
+    ],
+    providers: [
+      {
+        name: "Amazon",
+        subtitle: "Amazon Fresh eligible",
+        billing: "one-time",
+        regularPrice: 5.99,
+        currentPrice: 4.99,
+        status: "Live-ready snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: null },
+        coupons: [{ label: "Fresh 5% basket coupon", type: "percent", value: 0.05, combinable: true, requirements: ["Applies on eligible fresh orders only."] }],
+        dealRequirements: ["Fresh delivery minimum may apply.", "Local availability affects same-day delivery."],
+        history: [
+          { date: "2026-01-10", price: 5.99 },
+          { date: "2026-02-08", price: 5.49 },
+          { date: "2026-02-28", price: 4.99 },
+          { date: "2026-03-19", price: 4.79 },
+          { date: "2026-04-02", price: 4.99 },
+          { date: "2026-04-15", price: 4.99 }
+        ]
+      },
+      {
+        name: "Walmart",
+        subtitle: "Pickup and delivery",
+        billing: "one-time",
+        regularPrice: 5.46,
+        currentPrice: 4.74,
+        status: "Live-ready snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: { value: 0.05, requirements: ["Senior grocery savings vary by local store program."] }, service: null },
+        coupons: [{ label: "$1 produce basket coupon", type: "fixed", value: 1, combinable: true, requirements: ["Requires minimum produce spend."] }],
+        dealRequirements: ["Quality and inventory may vary by store."],
+        history: [
+          { date: "2026-01-10", price: 5.46 },
+          { date: "2026-02-08", price: 5.12 },
+          { date: "2026-02-28", price: 4.88 },
+          { date: "2026-03-19", price: 4.66 },
+          { date: "2026-04-02", price: 4.74 },
+          { date: "2026-04-15", price: 4.74 }
+        ]
+      },
+      {
+        name: "Target",
+        subtitle: "Target Circle grocery",
+        billing: "one-time",
+        regularPrice: 5.29,
+        currentPrice: 4.89,
+        status: "Live-ready snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: { value: 0.05, requirements: ["Military appreciation grocery offer must be active in Circle."] } },
+        coupons: [],
+        dealRequirements: ["Circle grocery offers rotate weekly."],
+        history: [
+          { date: "2026-01-10", price: 5.29 },
+          { date: "2026-02-08", price: 5.09 },
+          { date: "2026-02-28", price: 4.99 },
+          { date: "2026-03-19", price: 4.79 },
+          { date: "2026-04-02", price: 4.89 },
+          { date: "2026-04-15", price: 4.89 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "paper-towels-12pk",
+    name: "Paper Towels 12-Pack",
+    type: "product",
+    category: "Household",
+    matchMode: "Same item",
+    notes: "Household essentials example with quantity-break pricing and reorder planning.",
+    keywords: ["paper towels", "bulk", "household", "consumables", "reorder"],
+    reorder: { cadenceDays: 30, reminderWindowDays: 5, saleThreshold: 18.99, perishability: "Low" },
+    bulkTiers: [
+      { minQty: 2, label: "Buy 2 save 10%", effectivePrice: 18.9 },
+      { minQty: 4, label: "Buy 4 save 15%", effectivePrice: 17.85 }
+    ],
+    providers: [
+      {
+        name: "Amazon",
+        subtitle: "Subscribe & Save eligible",
+        billing: "one-time",
+        regularPrice: 22.99,
+        currentPrice: 20.99,
+        status: "Live-ready snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: null },
+        coupons: [{ label: "Subscribe & Save 5%", type: "percent", value: 0.05, combinable: true, requirements: ["Requires Subscribe & Save enrollment."] }],
+        dealRequirements: ["Subscription can be canceled after shipment if desired."],
+        history: [
+          { date: "2026-01-10", price: 22.99 },
+          { date: "2026-02-08", price: 21.99 },
+          { date: "2026-02-28", price: 21.49 },
+          { date: "2026-03-19", price: 20.99 },
+          { date: "2026-04-02", price: 20.99 },
+          { date: "2026-04-15", price: 20.99 }
+        ]
+      },
+      {
+        name: "Walmart",
+        subtitle: "Store pickup",
+        billing: "one-time",
+        regularPrice: 21.97,
+        currentPrice: 19.97,
+        status: "Live-ready snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: null },
+        coupons: [{ label: "$2 household coupon", type: "fixed", value: 2, combinable: true, requirements: ["App coupon on participating household essentials."] }],
+        dealRequirements: ["Bulk shelf inventory varies by local store."],
+        history: [
+          { date: "2026-01-10", price: 21.97 },
+          { date: "2026-02-08", price: 20.97 },
+          { date: "2026-02-28", price: 20.47 },
+          { date: "2026-03-19", price: 19.97 },
+          { date: "2026-04-02", price: 19.97 },
+          { date: "2026-04-15", price: 19.97 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "rav4-xle-local",
+    name: "Toyota RAV4 XLE AWD",
+    type: "product",
+    category: "Vehicle",
+    matchMode: "Same vehicle trim",
+    notes: "Local dealership-style comparison with sale price, financing APR, and buyer-program discounts.",
+    keywords: ["car", "toyota", "rav4", "dealership", "apr", "auto loan", "vehicle"],
+    providers: [
+      {
+        name: "Northside Toyota",
+        subtitle: "Austin area dealership",
+        billing: "one-time",
+        regularPrice: 35640,
+        currentPrice: 34990,
+        status: "Local dealership snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: { value: 0.01, requirements: ["College grad or student rebate documentation required."] }, senior: null, service: { value: 0.015, requirements: ["Military rebate proof required."] } },
+        coupons: [{ label: "$500 dealer cash", type: "fixed", value: 500, combinable: false, requirements: ["Dealer cash typically cannot stack with all APR promos."] }],
+        dealRequirements: ["Price excludes TTL and dealer fees.", "Vehicle must be in local stock."],
+        aprOffers: [
+          { label: "60 months", apr: 4.9, requirements: ["Tier 1 credit required."] },
+          { label: "72 months", apr: 5.9, requirements: ["Tier 1-2 credit required."] }
+        ],
+        history: [
+          { date: "2026-01-10", price: 35640 },
+          { date: "2026-02-08", price: 35490 },
+          { date: "2026-02-28", price: 35290 },
+          { date: "2026-03-19", price: 34990 },
+          { date: "2026-04-02", price: 34990 },
+          { date: "2026-04-15", price: 34990 }
+        ]
+      },
+      {
+        name: "Capital City Toyota",
+        subtitle: "Round Rock area dealership",
+        billing: "one-time",
+        regularPrice: 35790,
+        currentPrice: 34750,
+        status: "Local dealership snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: { value: 0.008, requirements: ["Recent graduate paperwork required."] }, senior: { value: 0.005, requirements: ["Senior customer event pricing may be required."] }, service: { value: 0.012, requirements: ["Military rebate proof required."] } },
+        coupons: [],
+        dealRequirements: ["APR special may replace cash rebate.", "Dealer add-ons may change the out-the-door total."],
+        aprOffers: [
+          { label: "60 months", apr: 4.49, requirements: ["Top-tier credit required."] },
+          { label: "72 months", apr: 5.49, requirements: ["Top-tier credit required."] }
+        ],
+        history: [
+          { date: "2026-01-10", price: 35790 },
+          { date: "2026-02-08", price: 35550 },
+          { date: "2026-02-28", price: 35250 },
+          { date: "2026-03-19", price: 34950 },
+          { date: "2026-04-02", price: 34750 },
+          { date: "2026-04-15", price: 34750 }
+        ]
+      },
+      {
+        name: "Hill Country Toyota",
+        subtitle: "San Marcos area dealership",
+        billing: "one-time",
+        regularPrice: 35590,
+        currentPrice: 34890,
+        status: "Local dealership snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: { value: 0.02, requirements: ["Military appreciation certificate required."] } },
+        coupons: [{ label: "$750 loyalty cash", type: "fixed", value: 750, combinable: false, requirements: ["Existing Toyota owner required."] }],
+        dealRequirements: ["Loyalty cash cannot stack with every APR offer."],
+        aprOffers: [
+          { label: "60 months", apr: 5.25, requirements: ["Well-qualified buyers only."] },
+          { label: "84 months", apr: 6.29, requirements: ["Longer term increases finance cost."] }
+        ],
+        history: [
+          { date: "2026-01-10", price: 35590 },
+          { date: "2026-02-08", price: 35390 },
+          { date: "2026-02-28", price: 35190 },
+          { date: "2026-03-19", price: 34990 },
+          { date: "2026-04-02", price: 34890 },
+          { date: "2026-04-15", price: 34890 }
+        ]
+      }
+    ]
+  },
+  {
+    id: "mortgage-350k-30y",
+    name: "30-Year Fixed Mortgage for $350k Home",
+    type: "service",
+    category: "Home APR",
+    matchMode: "Equivalent loan",
+    notes: "Mortgage comparison using sample monthly payment estimates plus APR-focused lender comparison.",
+    keywords: ["house", "home", "mortgage", "apr", "loan", "lender", "30 year fixed"],
+    providers: [
+      {
+        name: "Lone Star Mortgage",
+        subtitle: "Local lender example",
+        billing: "monthly",
+        regularPrice: 2365,
+        currentPrice: 2288,
+        status: "Local lender snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: { value: 0.005, requirements: ["Military lender credit may reduce closing costs rather than rate."] } },
+        coupons: [],
+        dealRequirements: ["Estimated payment excludes taxes and insurance.", "APR assumes 20% down and strong credit."],
+        aprOffers: [{ label: "30-year fixed APR", apr: 6.18, requirements: ["Sample assumes owner-occupied primary residence."] }],
+        history: [
+          { date: "2026-01-10", price: 2410 },
+          { date: "2026-02-08", price: 2388 },
+          { date: "2026-02-28", price: 2340 },
+          { date: "2026-03-19", price: 2315 },
+          { date: "2026-04-02", price: 2295 },
+          { date: "2026-04-15", price: 2288 }
+        ]
+      },
+      {
+        name: "River City Bank",
+        subtitle: "Regional bank example",
+        billing: "monthly",
+        regularPrice: 2399,
+        currentPrice: 2302,
+        status: "Local lender snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: { value: 0.004, requirements: ["Relationship pricing may be offered to senior banking customers."] }, service: null },
+        coupons: [],
+        dealRequirements: ["Relationship checking account may be required for best advertised rate."],
+        aprOffers: [{ label: "30-year fixed APR", apr: 6.24, requirements: ["Auto-pay from River City account required for relationship pricing."] }],
+        history: [
+          { date: "2026-01-10", price: 2430 },
+          { date: "2026-02-08", price: 2399 },
+          { date: "2026-02-28", price: 2365 },
+          { date: "2026-03-19", price: 2330 },
+          { date: "2026-04-02", price: 2310 },
+          { date: "2026-04-15", price: 2302 }
+        ]
+      },
+      {
+        name: "Hill Country Credit Union",
+        subtitle: "Credit union example",
+        billing: "monthly",
+        regularPrice: 2350,
+        currentPrice: 2269,
+        status: "Local lender snapshot",
+        lastChecked: "2026-04-15",
+        discounts: { student: null, senior: null, service: { value: 0.004, requirements: ["Veteran closing-cost credit may apply."] } },
+        coupons: [],
+        dealRequirements: ["Membership eligibility required.", "Rates can vary with points and lock period."],
+        aprOffers: [{ label: "30-year fixed APR", apr: 6.09, requirements: ["Quoted APR assumes no cash-out and conforming loan amount."] }],
+        history: [
+          { date: "2026-01-10", price: 2390 },
+          { date: "2026-02-08", price: 2360 },
+          { date: "2026-02-28", price: 2325 },
+          { date: "2026-03-19", price: 2290 },
+          { date: "2026-04-02", price: 2279 },
+          { date: "2026-04-15", price: 2269 }
+        ]
+      }
+    ]
+  }
+);
+
+const WATCH_STORAGE_KEY = "pricepilot-watch-settings-v1";
 
 const state = {
   items: [],
@@ -590,6 +885,9 @@ const state = {
   sortBy: "final-asc",
   selectedId: null,
   applyCoupons: true,
+  plannerQuantity: 1,
+  watches: {},
+  notificationPermission: "default",
   profile: {
     student: false,
     senior: false,
@@ -608,6 +906,12 @@ const serviceToggle = document.querySelector("#serviceToggle");
 const couponToggle = document.querySelector("#couponToggle");
 const jumpToSearchBtn = document.querySelector("#jumpToSearchBtn");
 const resetDataBtn = document.querySelector("#resetDataBtn");
+const targetPriceInput = document.querySelector("#targetPriceInput");
+const emailAlertInput = document.querySelector("#emailAlertInput");
+const textAlertInput = document.querySelector("#textAlertInput");
+const enableNotificationsBtn = document.querySelector("#enableNotificationsBtn");
+const saveWatchBtn = document.querySelector("#saveWatchBtn");
+const plannerQuantityInput = document.querySelector("#plannerQuantityInput");
 
 const catalogList = document.querySelector("#catalogList");
 const providerGrid = document.querySelector("#providerGrid");
@@ -619,6 +923,9 @@ const historyLegend = document.querySelector("#historyLegend");
 const historyNote = document.querySelector("#historyNote");
 const liveRequirementsText = document.querySelector("#liveRequirementsText");
 const dataModeNote = document.querySelector("#dataModeNote");
+const alertStatusText = document.querySelector("#alertStatusText");
+const watchlistItems = document.querySelector("#watchlistItems");
+const plannerGrid = document.querySelector("#plannerGrid");
 
 const catalogCardTemplate = document.querySelector("#catalogCardTemplate");
 const providerCardTemplate = document.querySelector("#providerCardTemplate");
@@ -635,6 +942,118 @@ function saveTrackedCatalog() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(comparisonData));
 }
 
+function loadWatches() {
+  try {
+    const raw = window.localStorage.getItem(WATCH_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Unable to load watch settings.", error);
+    return {};
+  }
+}
+
+function saveWatches() {
+  window.localStorage.setItem(WATCH_STORAGE_KEY, JSON.stringify(state.watches));
+}
+
+function getItemById(itemId) {
+  return state.items.find((item) => item.id === itemId) || null;
+}
+
+function getActiveAprOffer(provider) {
+  if (!provider.aprOffers || !provider.aprOffers.length) {
+    return null;
+  }
+  return provider.aprOffers.reduce((best, current) => (current.apr < best.apr ? current : best));
+}
+
+function getBulkTier(item) {
+  if (!item?.bulkTiers || state.plannerQuantity < 1) {
+    return null;
+  }
+  const eligible = item.bulkTiers.filter((tier) => state.plannerQuantity >= tier.minQty);
+  if (!eligible.length) {
+    return null;
+  }
+  return eligible.reduce((best, current) => (current.effectivePrice < best.effectivePrice ? current : best));
+}
+
+function requestBrowserNotifications() {
+  if (!("Notification" in window)) {
+    alertStatusText.textContent = "Browser notifications are not supported in this browser.";
+    return;
+  }
+
+  Notification.requestPermission().then((permission) => {
+    state.notificationPermission = permission;
+    alertStatusText.textContent = `Browser alert permission: ${permission}.`;
+  });
+}
+
+function maybeTriggerWatchNotifications() {
+  if (!("Notification" in window) || state.notificationPermission !== "granted") {
+    return;
+  }
+
+  Object.entries(state.watches).forEach(([itemId, watch]) => {
+    const item = getItemById(itemId);
+    if (!item) {
+      return;
+    }
+    const best = getVisibleProviderComparisons(item)[0];
+    if (!best || !watch.targetPrice || best.finalPrice > watch.targetPrice) {
+      return;
+    }
+    if (watch.lastNotifiedPrice === best.finalPrice) {
+      return;
+    }
+
+    new Notification(`${item.name} is at ${formatCurrency(best.finalPrice, best.billing)}`, {
+      body: `${best.name} is now at or below your target price of ${formatCurrency(watch.targetPrice, best.billing)}.`
+    });
+    state.watches[itemId].lastNotifiedPrice = best.finalPrice;
+    saveWatches();
+  });
+}
+
+function saveSelectedWatch() {
+  const item = getItemById(state.selectedId);
+  if (!item) {
+    alertStatusText.textContent = "Select an item before saving a watch.";
+    return;
+  }
+
+  const best = getVisibleProviderComparisons(item)[0];
+  if (!best) {
+    alertStatusText.textContent = "No visible provider is available for this item right now.";
+    return;
+  }
+
+  const targetPrice = Number.parseFloat(targetPriceInput.value);
+  state.watches[item.id] = {
+    itemName: item.name,
+    targetPrice: Number.isFinite(targetPrice) ? targetPrice : best.finalPrice,
+    email: emailAlertInput.value.trim(),
+    text: textAlertInput.value.trim(),
+    updatedAt: new Date().toISOString(),
+    lastNotifiedPrice: null
+  };
+  saveWatches();
+  alertStatusText.textContent = `Saved watch for ${item.name}. Browser alerts ${state.notificationPermission === "granted" ? "enabled" : "will stay in-app until permission is granted"}.`;
+  renderWatchlist();
+  maybeTriggerWatchNotifications();
+}
+
+function removeWatch(itemId) {
+  delete state.watches[itemId];
+  saveWatches();
+  renderWatchlist();
+  alertStatusText.textContent = "Watch removed.";
+}
 function loadTrackedCatalog() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -653,6 +1072,8 @@ function loadTrackedCatalog() {
 
 function hydrateState() {
   state.items = loadTrackedCatalog();
+  state.watches = loadWatches();
+  state.notificationPermission = ("Notification" in window) ? Notification.permission : "unsupported";
   const firstItem = state.items[0];
   state.selectedId = firstItem ? firstItem.id : null;
 }
@@ -772,6 +1193,7 @@ function getProviderComparison(provider, item) {
   const currentMarkdown = provider.currentPrice - chosen.finalPrice;
   const historyLow = Math.min(...provider.history.map((point) => point.price));
   const historyHigh = Math.max(...provider.history.map((point) => point.price));
+  const aprOffer = getActiveAprOffer(provider);
 
   return {
     ...provider,
@@ -788,10 +1210,12 @@ function getProviderComparison(provider, item) {
     stackNote: chosen.stackNote,
     historyLow,
     historyHigh,
+    aprOffer,
     requirements: [
       ...provider.dealRequirements,
       ...(chosen.membership.requirements || []),
-      ...(chosen.coupon?.requirements || [])
+      ...(chosen.coupon?.requirements || []),
+      ...(aprOffer?.requirements || [])
     ]
   };
 }
@@ -891,10 +1315,10 @@ function renderCatalog(filteredItems) {
     card.classList.toggle("is-active", item.id === state.selectedId);
     card.querySelector(".catalog-title").textContent = item.name;
     card.querySelector(".catalog-type").textContent = item.type;
-    card.querySelector(".catalog-subtitle").textContent = `${item.category} � ${item.matchMode}`;
+    card.querySelector(".catalog-subtitle").textContent = `${item.category} - ${item.matchMode}`;
     card.querySelector(".catalog-best").textContent = formatCurrency(best.finalPrice, best.billing);
     card.querySelector(".catalog-regular").textContent = `Regular ${formatCurrency(best.regularPrice, best.billing)}`;
-    card.querySelector(".catalog-note").textContent = `${best.name} � ${best.stackNote}`;
+    card.querySelector(".catalog-note").textContent = `${best.name} - ${best.stackNote}`;
     card.querySelector(".catalog-pill").textContent = `Save ${formatCurrency(best.savings, best.billing)}`;
     card.querySelector(".catalog-count").textContent = `${item.providerComparisons.length} providers`;
 
@@ -938,21 +1362,44 @@ function renderSelectedItem(item) {
     selectedDescription.textContent = "Search above to inspect current comparison results, coupon stacking, deal requirements, and price history.";
     selectedBadges.innerHTML = "";
     providerGrid.innerHTML = '<div class="empty-state">Provider detail will appear here once a tracked item is selected.</div>';
+    plannerGrid.innerHTML = '<div class="empty-state">Planner tips will appear here once a tracked item is selected.</div>';
     historyNote.textContent = "Price history will appear once a tracked item is selected.";
     historyLegend.innerHTML = "";
     historyChart.innerHTML = "";
+    targetPriceInput.value = "";
+    emailAlertInput.value = "";
+    textAlertInput.value = "";
     return;
   }
 
   selectedTitle.textContent = item.name;
   selectedDescription.textContent = item.notes;
   selectedBadges.innerHTML = "";
-  [item.category, item.matchMode, `${item.providerComparisons.length} providers active`].forEach((label) => {
-    selectedBadges.appendChild(buildBadge(label));
-  });
+  const badgeLabels = [item.category, item.matchMode, `${item.providerComparisons.length} providers active`];
+  if (item.bulkTiers?.length) {
+    badgeLabels.push("Bulk pricing");
+  }
+  if (item.reorder) {
+    badgeLabels.push(`Reorder ${item.reorder.cadenceDays}d`);
+  }
+  if (item.providerComparisons.some((provider) => provider.aprOffer)) {
+    badgeLabels.push("APR comparison");
+  }
+  if (state.watches[item.id]) {
+    badgeLabels.push("Watched");
+  }
+  badgeLabels.forEach((label) => selectedBadges.appendChild(buildBadge(label)));
+
+  const watch = state.watches[item.id];
+  targetPriceInput.value = watch?.targetPrice ?? "";
+  emailAlertInput.value = watch?.email ?? "";
+  textAlertInput.value = watch?.text ?? "";
+  const watchBilling = item.providerComparisons[0]?.billing || "one-time";
+  alertStatusText.textContent = watch ? `Watching ${item.name} for ${formatCurrency(watch.targetPrice, watchBilling)} or lower.` : `No watch configured for ${item.name} yet.`;
 
   renderHistoryChart(item.providerComparisons);
   renderProviders(item.providerComparisons);
+  renderPlanner(item, item.providerComparisons);
 }
 
 function renderProviders(providers) {
@@ -969,7 +1416,7 @@ function renderProviders(providers) {
     const card = providerCardTemplate.content.firstElementChild.cloneNode(true);
     card.querySelector(".provider-name").textContent = provider.name;
     card.querySelector(".provider-rank").textContent = `#${index + 1}`;
-    card.querySelector(".provider-subtitle").textContent = `${provider.subtitle} � Updated ${formatDate(provider.lastChecked)}`;
+    card.querySelector(".provider-subtitle").textContent = `${provider.subtitle} - Updated ${formatDate(provider.lastChecked)}`;
     card.querySelector(".provider-status").textContent = provider.status;
     card.querySelector(".provider-regular").textContent = formatCurrency(provider.regularPrice, provider.billing);
     card.querySelector(".provider-current").textContent = formatCurrency(provider.currentPrice, provider.billing);
@@ -978,6 +1425,7 @@ function renderProviders(providers) {
 
     const metaNode = card.querySelector(".provider-meta");
     const metaValues = [
+      ...(provider.aprOffer ? [`Best APR ${provider.aprOffer.apr}% - ${provider.aprOffer.label}`] : []),
       `Current markdown ${formatCurrency(provider.currentMarkdown, provider.billing)}`,
       `Total markdown ${formatCurrency(provider.savings, provider.billing)}`,
       `History low ${formatCurrency(provider.historyLow, provider.billing)}`,
@@ -1116,16 +1564,149 @@ function renderHistoryChart(providers) {
     historyLegend.appendChild(legendItem);
   });
 
-  historyNote.textContent = `${formatDate(dates[0])} to ${formatDate(dates[dates.length - 1])} � ${providers.length} providers visible`;
+  historyNote.textContent = `${formatDate(dates[0])} to ${formatDate(dates[dates.length - 1])} - ${providers.length} providers visible`;
+}
+function renderWatchlist() {
+  watchlistItems.innerHTML = "";
+  const entries = Object.entries(state.watches);
+  if (!entries.length) {
+    watchlistItems.innerHTML = '<div class="empty-state">Items you watch for sale alerts will show up here.</div>';
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  entries.forEach(([itemId, watch]) => {
+    const item = getItemById(itemId);
+    if (!item) {
+      return;
+    }
+    const best = getVisibleProviderComparisons(item)[0];
+    const card = document.createElement("article");
+    card.className = "watchlist-card";
+    card.innerHTML = `
+      <div class="watchlist-card-header">
+        <div>
+          <h4>${item.name}</h4>
+          <p class="history-note">Best now: ${best ? formatCurrency(best.finalPrice, best.billing) : "Unavailable"}</p>
+        </div>
+        <span class="savings-pill ${best && watch.targetPrice >= best.finalPrice ? "" : "is-muted"}">${watch.targetPrice ? `Target ${formatCurrency(watch.targetPrice, best?.billing || "one-time")}` : "No target"}</span>
+      </div>
+      <div class="watchlist-meta">
+        <span class="meta-pill">${watch.email || "No email"}</span>
+        <span class="meta-pill">${watch.text || "No text"}</span>
+      </div>
+      <div class="watchlist-actions">
+        <button class="text-button" type="button" data-jump-watch="${itemId}">Open</button>
+        <button class="text-button" type="button" data-remove-watch="${itemId}">Remove</button>
+      </div>
+    `;
+    fragment.appendChild(card);
+  });
+  watchlistItems.appendChild(fragment);
+
+  watchlistItems.querySelectorAll("[data-jump-watch]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedId = button.dataset.jumpWatch;
+      renderApp();
+    });
+  });
+  watchlistItems.querySelectorAll("[data-remove-watch]").forEach((button) => {
+    button.addEventListener("click", () => removeWatch(button.dataset.removeWatch));
+  });
+}
+
+function renderPlanner(item, providers) {
+  plannerGrid.innerHTML = "";
+  if (!item) {
+    plannerGrid.innerHTML = '<div class="empty-state">Planner recommendations will appear here for the selected item.</div>';
+    return;
+  }
+
+  const cards = [];
+  const bulkTier = getBulkTier(item);
+  if (item.bulkTiers?.length) {
+    const cheapest = providers[0];
+    const standardTotal = cheapest ? cheapest.finalPrice * state.plannerQuantity : 0;
+    const bulkTotal = bulkTier ? bulkTier.effectivePrice * state.plannerQuantity : null;
+    cards.push({
+      title: "Bulk discount planner",
+      body: bulkTier
+        ? `${bulkTier.label} drops the unit price to ${formatCurrency(bulkTier.effectivePrice)} and the estimated ${state.plannerQuantity}-unit total to ${formatCurrency(bulkTotal)}.`
+        : `No bulk tier is active at quantity ${state.plannerQuantity}. Standard estimated total is ${formatCurrency(standardTotal)}.`,
+      meta: [
+        cheapest ? `Best single-unit price ${formatCurrency(cheapest.finalPrice, cheapest.billing)}` : "No provider active",
+        `Planner quantity ${state.plannerQuantity}`
+      ]
+    });
+  }
+
+  if (item.reorder) {
+    const cheapest = providers[0];
+    const nextReminder = new Date();
+    nextReminder.setDate(nextReminder.getDate() + Math.max(1, item.reorder.cadenceDays - item.reorder.reminderWindowDays));
+    const onSale = cheapest && cheapest.finalPrice <= item.reorder.saleThreshold;
+    cards.push({
+      title: "Perishable and reorder helper",
+      body: onSale
+        ? `${item.name} is under your modeled sale threshold now, so this is a strong reorder window.`
+        : `Next reorder reminder lands around ${nextReminder.toLocaleDateString("en-US")}. The current threshold target is ${formatCurrency(item.reorder.saleThreshold)}.`,
+      meta: [
+        `Cadence ${item.reorder.cadenceDays} days`,
+        `Perishability ${item.reorder.perishability}`,
+        `Reminder lead ${item.reorder.reminderWindowDays} days`
+      ]
+    });
+  }
+
+  const aprProviders = providers.filter((provider) => provider.aprOffer);
+  if (aprProviders.length) {
+    const bestApr = aprProviders.reduce((best, current) => (current.aprOffer.apr < best.aprOffer.apr ? current : best));
+    cards.push({
+      title: item.category === "Vehicle" ? "Dealership APR helper" : "Home APR helper",
+      body: `${bestApr.name} currently shows the best APR at ${bestApr.aprOffer.apr}% for ${bestApr.aprOffer.label}. Use this as the benchmark when asking another dealership or lender to match or beat it.`,
+      meta: [
+        `Benchmark APR ${bestApr.aprOffer.apr}%`,
+        `Benchmark payment ${formatCurrency(bestApr.finalPrice, bestApr.billing)}`
+      ]
+    });
+  }
+
+  if (!cards.length) {
+    plannerGrid.innerHTML = '<div class="empty-state">No bulk, reorder, or APR planner helpers apply to this item yet.</div>';
+    return;
+  }
+
+  cards.forEach((cardInfo) => {
+    const card = document.createElement("article");
+    card.className = "planner-card";
+    card.innerHTML = `
+      <div class="planner-card-header">
+        <h4>${cardInfo.title}</h4>
+      </div>
+      <p class="detail-description">${cardInfo.body}</p>
+      <div class="planner-meta"></div>
+    `;
+    const metaNode = card.querySelector(".planner-meta");
+    cardInfo.meta.forEach((meta) => {
+      const pill = document.createElement("span");
+      pill.className = "meta-pill";
+      pill.textContent = meta;
+      metaNode.appendChild(pill);
+    });
+    plannerGrid.appendChild(card);
+  });
 }
 function renderApp() {
   const filteredItems = getFilteredItems();
   const selectedItem = ensureSelectedItem(filteredItems);
+  plannerQuantityInput.value = String(state.plannerQuantity);
   updateSummary(filteredItems);
   renderCatalog(filteredItems);
   renderSelectedItem(selectedItem);
+  renderWatchlist();
+  maybeTriggerWatchNotifications();
   dataModeNote.textContent = `Source mode: ${Object.values(state.providerVisibility).filter(Boolean).length} provider adapters enabled in this comparison view.`;
-  liveRequirementsText.textContent = "To go live, connect server-side adapters for supported retailer APIs, store dated snapshots in your own backend, and only expose safe results to the browser.";
+  liveRequirementsText.textContent = "To go live, connect server-side adapters for supported retailer APIs, live web search, dated snapshot storage, and secure email or text notification services.";
 }
 
 function attachEvents() {
@@ -1183,8 +1764,19 @@ function attachEvents() {
     searchInput.focus();
   });
 
+  enableNotificationsBtn.addEventListener("click", requestBrowserNotifications);
+
+  saveWatchBtn.addEventListener("click", saveSelectedWatch);
+
+  plannerQuantityInput.addEventListener("input", (event) => {
+    const nextValue = Number.parseInt(event.target.value, 10);
+    state.plannerQuantity = Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 1;
+    renderApp();
+  });
+
   resetDataBtn.addEventListener("click", () => {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(WATCH_STORAGE_KEY);
     hydrateState();
     renderApp();
   });

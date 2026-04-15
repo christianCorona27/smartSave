@@ -6,7 +6,7 @@
     <title>PricePilot Compare</title>
     <meta
       name="description"
-      content="Search product and service price snapshots across multiple retailers, compare coupons and eligibility discounts, and review dated price history."
+      content="Search product, service, dealership, and home APR price snapshots across multiple providers, compare coupons and eligibility discounts, and review dated price history."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,8 +24,9 @@
           <h1>Search the stores, compare the deal stack, and see the dated price story.</h1>
           <p class="hero-text">
             PricePilot now models how a real comparison flow should feel: scan the same item or an
-            equivalent service, compare Amazon, Best Buy, Walmart, Target, and more, then layer in
-            coupons, student pricing, senior discounts, and service member offers.
+            equivalent service, compare Amazon, Best Buy, Walmart, Target, local dealerships, and
+            even home-loan APR examples, then layer in coupons, student pricing, senior discounts,
+            service member offers, alerts, and reorder planning.
           </p>
           <div class="hero-actions">
             <button class="ghost-button" id="jumpToSearchBtn" type="button">Jump to search</button>
@@ -37,7 +38,7 @@
           <ol class="meter-steps">
             <li>Same-item and equivalent-plan comparison datasets.</li>
             <li>Coupon, eligibility, and requirement-aware final pricing.</li>
-            <li>Dated price history with current-store comparison.</li>
+            <li>Dated price history, alerts, bulk planning, and APR comparison.</li>
           </ol>
           <p class="meter-footnote" id="dataModeNote">
             Source mode: seeded retailer snapshots ready to be wired to live APIs.
@@ -118,7 +119,7 @@
               <h2>Search targets</h2>
             </div>
             <p class="panel-text">
-              These toggles control which seeded store adapters are included in the comparison.
+              These toggles control which seeded store, dealership, and lender adapters are included in the comparison.
             </p>
             <div class="source-list">
               <label class="source-pill">
@@ -169,6 +170,30 @@
                 <input class="provider-toggle" type="checkbox" value="iCloud+" checked />
                 <span>iCloud+</span>
               </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="Northside Toyota" checked />
+                <span>Northside Toyota</span>
+              </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="Capital City Toyota" checked />
+                <span>Capital City Toyota</span>
+              </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="Hill Country Toyota" checked />
+                <span>Hill Country Toyota</span>
+              </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="Lone Star Mortgage" checked />
+                <span>Lone Star Mortgage</span>
+              </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="River City Bank" checked />
+                <span>River City Bank</span>
+              </label>
+              <label class="source-pill">
+                <input class="provider-toggle" type="checkbox" value="Hill Country Credit Union" checked />
+                <span>Hill Country Credit Union</span>
+              </label>
             </div>
           </section>
 
@@ -181,9 +206,47 @@
               <li>Current app mode uses local retailer snapshots so GitHub Pages stays safe and fast.</li>
               <li>Each provider card already supports current price, coupon logic, and dated history.</li>
               <li id="liveRequirementsText">
-                To go live, connect server-side adapters for retailer APIs and your own history store.
+                To go fully live, connect server-side adapters for retailer APIs, live web search, and your own history plus alert store.
               </li>
             </ul>
+          </section>
+
+          <section class="panel alerts-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Alerts</p>
+              <h2>Watch and notify</h2>
+            </div>
+            <p class="panel-text">
+              Save the selected item to your watchlist, set a target price, and store email or text
+              preferences for the backend-ready notification flow.
+            </p>
+            <div class="alert-form">
+              <label>
+                Target price
+                <input id="targetPriceInput" type="number" min="0" step="0.01" placeholder="179.99" />
+              </label>
+              <label>
+                Email for alerts
+                <input id="emailAlertInput" type="email" placeholder="you@example.com" />
+              </label>
+              <label>
+                Text number
+                <input id="textAlertInput" type="tel" placeholder="555-123-4567" />
+              </label>
+              <div class="alert-actions">
+                <button class="ghost-button small-button" id="enableNotificationsBtn" type="button">Enable browser alerts</button>
+                <button class="solid-button small-button" id="saveWatchBtn" type="button">Watch selected item</button>
+              </div>
+              <p class="history-note" id="alertStatusText">No watch configured yet.</p>
+            </div>
+          </section>
+
+          <section class="panel watchlist-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Watchlist</p>
+              <h2>Tracked alerts</h2>
+            </div>
+            <div id="watchlistItems" class="watchlist-items"></div>
           </section>
         </aside>
 
@@ -194,7 +257,7 @@
               <input
                 id="searchInput"
                 type="search"
-                placeholder="Search the same item or an equivalent service, like AirPods, internet, TV, or cloud storage"
+                placeholder="Search products, services, cars, or home APRs, like AirPods, internet, RAV4, or mortgage"
               />
             </label>
             <div class="filter-strip" role="group" aria-label="Filter tracked items">
@@ -257,6 +320,20 @@
                 <h3>Store and provider results</h3>
               </div>
               <div id="providerGrid" class="provider-grid"></div>
+            </section>
+
+            <section class="planner-shell">
+              <div class="providers-head">
+                <p class="section-kicker">Planner</p>
+                <h3>Bulk, reorder, and finance helpers</h3>
+              </div>
+              <div class="planner-toolbar">
+                <label class="search-field">
+                  <span>Planner quantity</span>
+                  <input id="plannerQuantityInput" type="number" min="1" step="1" value="1" />
+                </label>
+              </div>
+              <div id="plannerGrid" class="planner-grid"></div>
             </section>
           </section>
         </section>

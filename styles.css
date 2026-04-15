@@ -246,7 +246,9 @@ h1 {
 .provider-grid,
 .detail-badges,
 .history-legend,
-.source-list {
+.source-list,
+.watchlist-items,
+.planner-grid {
   display: grid;
   gap: 1rem;
 }
@@ -392,6 +394,24 @@ h1 {
   display: grid;
   gap: 0.45rem;
   font-size: 0.92rem;
+}
+
+.alert-form,
+.alert-actions,
+.watchlist-items,
+.planner-grid,
+.planner-toolbar {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.alert-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.small-button {
+  min-height: 2.7rem;
+  padding: 0.7rem 0.95rem;
 }
 
 .search-field-wide {
@@ -592,6 +612,7 @@ textarea:focus,
 }
 
 .catalog-pill.is-muted,
+.savings-pill.is-muted,
 .provider-status.is-muted {
   background: rgba(255, 255, 255, 0.08);
   color: var(--muted);
@@ -642,6 +663,56 @@ textarea:focus,
 }
 
 .provider-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.watchlist-card,
+.planner-card {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(10, 10, 10, 0.18);
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.watchlist-card-header,
+.planner-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.watchlist-card h4,
+.planner-card h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.watchlist-meta,
+.planner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.watchlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.text-button {
+  min-height: 2.2rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: transparent;
+}
+
+.planner-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -725,6 +796,10 @@ textarea:focus,
   .provider-grid {
     grid-template-columns: 1fr;
   }
+
+  .planner-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {
@@ -742,7 +817,9 @@ textarea:focus,
   .list-head,
   .catalog-card,
   .provider-pricing-grid,
-  .source-list {
+  .source-list,
+  .alert-actions,
+  .planner-grid {
     grid-template-columns: 1fr;
   }
 
