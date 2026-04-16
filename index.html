@@ -414,13 +414,19 @@
 
           <section class="detail-shell">
             <div class="detail-header">
-              <div>
-                <p class="section-kicker">Inspector</p>
-                <h2 id="selectedTitle">Select a tracked item</h2>
-                <p class="detail-description" id="selectedDescription">
-                  Search above to inspect current comparison results, coupon stacking, deal
-                  requirements, and price history.
-                </p>
+              <div class="detail-feature">
+                <div class="detail-media">
+                  <img id="selectedImage" alt="" loading="lazy" />
+                  <span id="selectedImageFallback">SS</span>
+                </div>
+                <div>
+                  <p class="section-kicker">Inspector</p>
+                  <h2 id="selectedTitle">Select a tracked item</h2>
+                  <p class="detail-description" id="selectedDescription">
+                    Search above to inspect current comparison results, coupon stacking, deal
+                    requirements, and price history.
+                  </p>
+                </div>
               </div>
               <div class="detail-badges" id="selectedBadges"></div>
             </div>
@@ -469,6 +475,10 @@
 
     <template id="catalogCardTemplate">
       <article class="catalog-card" tabindex="0">
+        <div class="catalog-media">
+          <img class="catalog-image" alt="" loading="lazy" />
+          <span class="catalog-fallback"></span>
+        </div>
         <div class="catalog-main">
           <div class="offer-title-line">
             <h3 class="catalog-title"></h3>
@@ -494,6 +504,7 @@
         <div class="provider-topline">
           <div>
             <div class="offer-title-line">
+              <span class="provider-logo" aria-hidden="true"></span>
               <h4 class="provider-name"></h4>
               <span class="provider-rank"></span>
             </div>

@@ -31,6 +31,8 @@ It compares:
 - Search tracked products, services, vehicle offers, and home APR scenarios from one main search bar
 - Filter by `All`, `Products`, or `Services`
 - Sort by cheapest final price, biggest markdown, provider coverage, or name
+- Browse a larger seeded catalog that now includes electronics, computers, appliances, apparel, school supplies, groceries, household goods, pet supplies, wireless plans, streaming, insurance, fitness, utilities, home security, vehicles, and home APR examples
+- View item photos and service/source brand marks in the comparison UI
 - Compare seeded store, dealership, and lender snapshots across:
 - Amazon
 - Best Buy
@@ -184,6 +186,7 @@ That runs the site through `netlify dev`, which enables the local serverless rou
 - Retailer, dealership, and lender pricing data is still seeded, not live scraped or API-fed
 - Pasted URL reading is best-effort metadata extraction; some retailers block automated reads or hide prices behind scripts, accounts, location, or carts
 - User-added trackers depend on the user confirming price and discount details before saving
+- Catalog photos are illustrative external images, not official product photos unless a user-pasted page supplies its own image metadata
 - The current GitHub Pages deployment does not run the backend routes
 - Real email and SMS delivery requires Netlify deployment plus provider secrets
 - The scheduled alert sweep currently checks the stored tracked snapshot price, not a live retailer feed

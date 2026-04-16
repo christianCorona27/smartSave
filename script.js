@@ -876,6 +876,272 @@ comparisonData.push(
   }
 );
 
+
+Object.assign(providerPalette, {
+  Costco: "#7dd3fc",
+  "Sam's Club": "#93c5fd",
+  HomeDepot: "#fbbf24",
+  "Lowe's": "#60a5fa",
+  Nike: "#c4b5fd",
+  Adidas: "#a5b4fc",
+  Staples: "#67e8f9",
+  Verizon: "#fda4af",
+  "T-Mobile": "#f0abfc",
+  MintMobile: "#86efac",
+  Netflix: "#fca5a5",
+  Hulu: "#bef264",
+  DisneyBundle: "#93c5fd",
+  StateFarm: "#f87171",
+  GEICO: "#fde68a",
+  Progressive: "#7dd3fc",
+  PlanetFitness: "#c084fc",
+  YMCA: "#5eead4",
+  AnytimeFitness: "#fb7185",
+  TeslaEnergy: "#93c5fd",
+  GreenMountain: "#86efac",
+  Reliant: "#38bdf8",
+  SimpliSafe: "#7dd3fc",
+  ADT: "#60a5fa",
+  Ring: "#93c5fd",
+  Chewy: "#60a5fa",
+  Petco: "#f9a8d4",
+  WalmartPet: "#93c5fd"
+});
+
+function buildHistory(base, current) {
+  const dates = ["2026-01-10", "2026-02-08", "2026-02-28", "2026-03-19", "2026-04-02", "2026-04-15"];
+  const values = [base, base * 0.98, base * 0.95, (base + current) / 2, current * 1.01, current];
+  return dates.map((date, index) => ({ date, price: Number(values[index].toFixed(2)) }));
+}
+
+function makeProvider(name, subtitle, regularPrice, currentPrice, coupon = null, dealRequirements = [], options = {}) {
+  return {
+    name,
+    subtitle,
+    billing: options.billing || "one-time",
+    regularPrice,
+    currentPrice,
+    status: options.status || "Live-ready snapshot",
+    lastChecked: "2026-04-15",
+    discounts: options.discounts || {
+      student: options.student ? { value: options.student, requirements: ["Student verification may be required for this offer."] } : null,
+      senior: options.senior ? { value: options.senior, requirements: ["Senior eligibility may require account or ID verification."] } : null,
+      service: options.service ? { value: options.service, requirements: ["Service member verification may be required."] } : null
+    },
+    coupons: coupon ? [coupon] : [],
+    dealRequirements,
+    aprOffers: options.aprOffers,
+    history: buildHistory(regularPrice, currentPrice)
+  };
+}
+
+comparisonData.push(
+  {
+    id: "macbook-air-m3-13",
+    name: "13-inch Laptop with 16GB Memory",
+    type: "product",
+    category: "Computers",
+    matchMode: "Equivalent spec",
+    notes: "Laptop comparison across retailers with student, service member, and coupon stack scenarios.",
+    keywords: ["laptop", "computer", "macbook", "school", "work", "best buy", "costco"],
+    providers: [
+      makeProvider("Best Buy", "Open-box and member pricing", 1099, 949.99, { label: "$50 member certificate", type: "fixed", value: 50, combinable: true, requirements: ["Requires rewards account certificate."] }, ["Open-box condition changes warranty and return terms."], { student: 0.05, service: 0.04 }),
+      makeProvider("Costco", "Warehouse bundle", 1099, 979.99, { label: "$30 warehouse promo", type: "fixed", value: 30, combinable: true, requirements: ["Warehouse membership required."] }, ["Bundle value can include warranty or accessories."], { service: 0.03 }),
+      makeProvider("Amazon", "Marketplace listing", 1099, 999.99, { label: "5% clipped tech coupon", type: "percent", value: 0.05, combinable: true, requirements: ["Coupon must appear on product page."] }, ["Seller and return policy should be confirmed before checkout."], { student: 0.03 })
+    ]
+  },
+  {
+    id: "robot-vacuum-lidar",
+    name: "Robot Vacuum with LiDAR Mapping",
+    type: "product",
+    category: "Home appliances",
+    matchMode: "Equivalent feature set",
+    notes: "Compares robot vacuums by sale price, app coupon, and membership savings.",
+    keywords: ["vacuum", "robot", "cleaning", "home", "appliance"],
+    providers: [
+      makeProvider("Amazon", "Smart home deal", 399.99, 279.99, { label: "Clip $40 smart home coupon", type: "fixed", value: 40, combinable: true, requirements: ["Coupon must be clipped before checkout."] }, ["Check replacement filter cost."], { student: 0.02 }),
+      makeProvider("Walmart", "Rollback price", 389.99, 298, { label: "10% app coupon", type: "percent", value: 0.1, combinable: true, requirements: ["App checkout may be required."] }, ["Pickup inventory varies by store."]),
+      makeProvider("Target", "Circle home promo", 399.99, 319.99, { label: "$25 Circle home reward", type: "fixed", value: 25, combinable: true, requirements: ["Target Circle account required."] }, ["Circle offer may be category-limited."], { service: 0.05 })
+    ]
+  },
+  {
+    id: "espresso-machine-starter",
+    name: "Espresso Machine Starter Kit",
+    type: "product",
+    category: "Kitchen",
+    matchMode: "Equivalent bundle",
+    notes: "Tracks appliance bundle discounts, coupons, and accessory-included offers.",
+    keywords: ["espresso", "coffee", "kitchen", "appliance", "bundle"],
+    providers: [
+      makeProvider("Target", "Kitchen bundle", 349.99, 289.99, { label: "$30 kitchen coupon", type: "fixed", value: 30, combinable: true, requirements: ["Coupon may require app activation."] }, ["Bundle contents vary by SKU."], { senior: 0.04 }),
+      makeProvider("Best Buy", "Small appliance sale", 349.99, 299.99, { label: "Member 5% reward", type: "percent", value: 0.05, combinable: true, requirements: ["Requires rewards account."] }, ["Warranty add-ons change total cost."]),
+      makeProvider("Walmart", "Marketplace kitchen kit", 329.99, 284, null, ["Verify seller rating and included accessories."])
+    ]
+  },
+  {
+    id: "running-shoes-neutral",
+    name: "Neutral Running Shoes",
+    type: "product",
+    category: "Apparel",
+    matchMode: "Equivalent shoe model",
+    notes: "Compares footwear sales, student/senior/service discounts, and loyalty coupon stack rules.",
+    keywords: ["shoes", "running", "apparel", "fitness", "student discount"],
+    providers: [
+      makeProvider("Nike", "Member sale", 140, 104.97, { label: "Extra 10% member code", type: "percent", value: 0.1, combinable: true, requirements: ["Free member account required."] }, ["Sizes and colors affect price."], { student: 0.1, service: 0.1 }),
+      makeProvider("Adidas", "Outlet promo", 140, 99.99, { label: "15% outlet code", type: "percent", value: 0.15, combinable: false, requirements: ["Promo code may not stack with ID discounts."] }, ["Final sale colorways may have limited returns."], { student: 0.15, senior: 0.1 }),
+      makeProvider("Amazon", "Marketplace shoe listing", 140, 109.99, null, ["Confirm seller and return window."])
+    ]
+  },
+  {
+    id: "school-backpack-tech",
+    name: "Tech Backpack with Laptop Sleeve",
+    type: "product",
+    category: "School supplies",
+    matchMode: "Equivalent capacity",
+    notes: "Back-to-school comparison with student discounts and bulk family purchase options.",
+    keywords: ["backpack", "school", "college", "student", "laptop bag"],
+    bulkTiers: [
+      { minQty: 2, label: "Buy 2 save 8%", effectivePrice: 54.12 },
+      { minQty: 4, label: "Family pack save 12%", effectivePrice: 51.76 }
+    ],
+    providers: [
+      makeProvider("Target", "Back-to-school sale", 69.99, 58.99, { label: "Circle 10% school coupon", type: "percent", value: 0.1, combinable: true, requirements: ["Circle account required."] }, ["Color and store inventory vary."], { student: 0.05 }),
+      makeProvider("Walmart", "School supplies rollback", 64.99, 54.88, { label: "$5 school coupon", type: "fixed", value: 5, combinable: true, requirements: ["Minimum school supply basket may apply."] }, ["Pickup availability varies."]),
+      makeProvider("Staples", "Student essentials", 74.99, 59.99, { label: "20% rewards coupon", type: "percent", value: 0.2, combinable: false, requirements: ["Rewards account coupon required."] }, ["Coupon may exclude clearance items."], { student: 0.1 })
+    ]
+  },
+  {
+    id: "phone-plan-unlimited",
+    name: "Unlimited Phone Plan for 1 Line",
+    type: "service",
+    category: "Wireless",
+    matchMode: "Equivalent unlimited plan",
+    notes: "Wireless plan comparison with autopay, student, senior, and military discount requirements.",
+    keywords: ["phone", "wireless", "cell", "unlimited", "service member", "senior"],
+    providers: [
+      makeProvider("Verizon", "Unlimited Welcome", 75, 65, { label: "$10 autopay discount", type: "fixed", value: 10, combinable: true, requirements: ["Debit or bank autopay required."] }, ["Taxes and device payments are not included."], { billing: "monthly", service: 0.12, senior: 0.08 }),
+      makeProvider("T-Mobile", "Essentials plan", 70, 60, { label: "Autopay $5 off", type: "fixed", value: 5, combinable: true, requirements: ["Autopay required."] }, ["Taxes and fees may vary by plan."], { billing: "monthly", service: 0.15, senior: 0.1 }),
+      makeProvider("MintMobile", "12-month unlimited", 40, 30, { label: "Intro 3-month promo", type: "fixed", value: 5, combinable: false, requirements: ["Prepay required for best rate."] }, ["Intro rates can change after renewal."], { billing: "monthly" })
+    ]
+  },
+  {
+    id: "streaming-family-bundle",
+    name: "Streaming Family Bundle",
+    type: "service",
+    category: "Streaming",
+    matchMode: "Equivalent ad-supported bundle",
+    notes: "Compares streaming bundles by monthly price, trial offers, student eligibility, and cancellation rules.",
+    keywords: ["streaming", "netflix", "hulu", "disney", "student", "bundle"],
+    providers: [
+      makeProvider("Netflix", "Standard with ads", 84, 6.99, null, ["Monthly price can change by region."], { billing: "monthly" }),
+      makeProvider("Hulu", "Student plan", 96, 7.99, { label: "Student streaming promo", type: "percent", value: 0.75, combinable: false, requirements: ["Student verification required."] }, ["Ad-supported plan."], { billing: "monthly", student: 0.75 }),
+      makeProvider("DisneyBundle", "Disney+ Hulu bundle", 132, 10.99, { label: "$2 bundle savings", type: "fixed", value: 2, combinable: true, requirements: ["Bundle signup required."] }, ["Bundle components can change."], { billing: "monthly" })
+    ]
+  },
+  {
+    id: "auto-insurance-full-coverage",
+    name: "Full-Coverage Auto Insurance Quote",
+    type: "service",
+    category: "Insurance",
+    matchMode: "Equivalent driver profile",
+    notes: "Insurance quote comparison with safe-driver, bundling, student, senior, and service member discounts.",
+    keywords: ["insurance", "car insurance", "auto", "student", "senior", "military"],
+    providers: [
+      makeProvider("StateFarm", "Bundle-ready quote", 182, 154, { label: "Home bundle discount", type: "percent", value: 0.12, combinable: true, requirements: ["Requires home or renters policy bundle."] }, ["Quote varies by ZIP, driving record, and coverage limits."], { billing: "monthly", student: 0.08, senior: 0.05 }),
+      makeProvider("GEICO", "Military and safe driver", 176, 149, { label: "Defensive driver discount", type: "percent", value: 0.05, combinable: true, requirements: ["Course certificate may be required."] }, ["Final quote requires underwriting."], { billing: "monthly", service: 0.15 }),
+      makeProvider("Progressive", "Snapshot quote", 188, 158, { label: "Telematics enrollment", type: "percent", value: 0.1, combinable: true, requirements: ["Driving app or device participation required."] }, ["Rate can rise or fall after monitoring period."], { billing: "monthly" })
+    ]
+  },
+  {
+    id: "gym-membership-basic",
+    name: "Monthly Gym Membership",
+    type: "service",
+    category: "Fitness",
+    matchMode: "Equivalent basic membership",
+    notes: "Fitness membership comparison with annual fees, student deals, senior programs, and cancellation requirements.",
+    keywords: ["gym", "fitness", "membership", "student", "senior"],
+    providers: [
+      makeProvider("PlanetFitness", "Classic membership", 15, 10, { label: "$1 startup promo", type: "fixed", value: 1, combinable: false, requirements: ["Startup promo timing varies."] }, ["Annual fee may apply."], { billing: "monthly", student: 0.1 }),
+      makeProvider("YMCA", "Community membership", 54, 44, { label: "Income-adjusted rate", type: "percent", value: 0.12, combinable: true, requirements: ["Eligibility documentation may be required."] }, ["Local branch pricing varies."], { billing: "monthly", senior: 0.15 }),
+      makeProvider("AnytimeFitness", "24-hour access", 49, 39, { label: "Service member promo", type: "percent", value: 0.1, combinable: true, requirements: ["Service verification required."] }, ["Contract length can change effective cost."], { billing: "monthly", service: 0.1 })
+    ]
+  },
+  {
+    id: "home-electric-plan-1000kwh",
+    name: "Home Electric Plan at 1,000 kWh",
+    type: "service",
+    category: "Utilities",
+    matchMode: "Equivalent monthly usage",
+    notes: "Electric plan comparison using sample 1,000 kWh usage, bill credits, autopay, and contract requirements.",
+    keywords: ["electric", "utility", "energy", "home", "bill"],
+    providers: [
+      makeProvider("TeslaEnergy", "Renewable plan", 154, 139, { label: "$20 solar referral credit", type: "fixed", value: 20, combinable: false, requirements: ["Referral or eligible market required."] }, ["Rates vary by utility territory."], { billing: "monthly" }),
+      makeProvider("GreenMountain", "Green energy fixed plan", 165, 145, { label: "Auto-pay $5 off", type: "fixed", value: 5, combinable: true, requirements: ["Autopay and paperless billing required."] }, ["Early termination fee may apply."], { billing: "monthly" }),
+      makeProvider("Reliant", "Bill credit plan", 172, 148, { label: "$25 usage credit", type: "fixed", value: 25, combinable: true, requirements: ["Usage must hit advertised kWh tier."] }, ["Bill credits can make low-usage months more expensive."], { billing: "monthly" })
+    ]
+  },
+  {
+    id: "home-security-monitoring",
+    name: "Home Security Monitoring Plan",
+    type: "service",
+    category: "Home security",
+    matchMode: "Equivalent professional monitoring",
+    notes: "Monitoring plan comparison with equipment bundles, monthly fees, and cancellation constraints.",
+    keywords: ["security", "monitoring", "home", "ring", "adt", "simplisafe"],
+    providers: [
+      makeProvider("SimpliSafe", "Standard monitoring", 31.99, 21.99, { label: "First month free", type: "fixed", value: 21.99, combinable: false, requirements: ["New customers only."] }, ["Equipment sold separately."], { billing: "monthly", service: 0.08 }),
+      makeProvider("ADT", "Professional monitoring", 59.99, 44.99, { label: "$100 install credit", type: "fixed", value: 8.33, combinable: true, requirements: ["Credit amortized for comparison only."] }, ["Contract and installation terms may apply."], { billing: "monthly", senior: 0.05 }),
+      makeProvider("Ring", "Protect Pro", 24.99, 20, null, ["Professional monitoring requires compatible alarm hardware."], { billing: "monthly" })
+    ]
+  },
+  {
+    id: "pet-food-30lb",
+    name: "Premium Dry Dog Food 30 lb",
+    type: "product",
+    category: "Pet supplies",
+    matchMode: "Same item",
+    notes: "Recurring pet supply tracker with autoship discounts, reorder planning, and bulk price checks.",
+    keywords: ["dog food", "pet", "chewy", "autoship", "bulk"],
+    reorder: { cadenceDays: 28, reminderWindowDays: 5, saleThreshold: 52.99, perishability: "Medium" },
+    bulkTiers: [
+      { minQty: 2, label: "2 bags autoship", effectivePrice: 48.49 },
+      { minQty: 4, label: "Pantry stock-up", effectivePrice: 46.99 }
+    ],
+    providers: [
+      makeProvider("Chewy", "Autoship eligible", 64.99, 54.99, { label: "Autoship 10%", type: "percent", value: 0.1, combinable: true, requirements: ["Autoship enrollment required."] }, ["Diet changes should be confirmed with pet needs."], { service: 0.03 }),
+      makeProvider("Petco", "Vital Care pricing", 63.99, 56.99, { label: "$5 rewards credit", type: "fixed", value: 5, combinable: true, requirements: ["Rewards balance required."] }, ["Store pickup can avoid shipping minimum."], { senior: 0.05 }),
+      makeProvider("WalmartPet", "Pickup and delivery", 61.99, 53.98, null, ["Confirm bag size and formula match exactly."])
+    ]
+  }
+);
+
+const categoryImageMap = {
+  Earbuds: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+  Gaming: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=600&q=80",
+  TV: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=600&q=80",
+  Internet: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80",
+  "Cloud storage": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80",
+  Grocery: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=600&q=80",
+  Household: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=600&q=80",
+  Vehicle: "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
+  "Home APR": "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80",
+  Computers: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=600&q=80",
+  "Home appliances": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80",
+  Kitchen: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80",
+  Apparel: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",
+  "School supplies": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80",
+  Wireless: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+  Streaming: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?auto=format&fit=crop&w=600&q=80",
+  Insurance: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=600&q=80",
+  Fitness: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80",
+  Utilities: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=600&q=80",
+  "Home security": "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=600&q=80",
+  "Pet supplies": "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80"
+};
+
+comparisonData.forEach((item) => {
+  item.imageUrl = item.imageUrl || categoryImageMap[item.category] || categoryImageMap[item.type === "service" ? "Streaming" : "Household"];
+});
 const WATCH_STORAGE_KEY = "smartsave-watch-settings-v1";
 const ZIP_STORAGE_KEY = "smartsave-local-zip-v1";
 
@@ -895,6 +1161,7 @@ const state = {
   zipCode: "",
   zipMatches: {},
   zipMatchSummary: "No ZIP match is active yet.",
+  customPreview: null,
   profile: {
     student: false,
     senior: false,
@@ -943,6 +1210,8 @@ const catalogList = document.querySelector("#catalogList");
 const providerGrid = document.querySelector("#providerGrid");
 const selectedTitle = document.querySelector("#selectedTitle");
 const selectedDescription = document.querySelector("#selectedDescription");
+const selectedImage = document.querySelector("#selectedImage");
+const selectedImageFallback = document.querySelector("#selectedImageFallback");
 const selectedBadges = document.querySelector("#selectedBadges");
 const historyChart = document.querySelector("#historyChart");
 const historyLegend = document.querySelector("#historyLegend");
@@ -1137,6 +1406,7 @@ function clearZipMatch() {
 }
 
 function applyPreviewToCustomForm(preview) {
+  state.customPreview = preview;
   if (preview.title && !customNameInput.value.trim()) {
     customNameInput.value = preview.title;
   }
@@ -1153,6 +1423,7 @@ function applyPreviewToCustomForm(preview) {
 
 async function readCustomUrl() {
   const url = customUrlInput.value.trim();
+  state.customPreview = null;
   if (!url) {
     customSourceStatus.textContent = "Paste a product or service URL first.";
     return;
@@ -1217,6 +1488,7 @@ function buildCustomTracker() {
       : "User-added manual tracker. Update the current price when you see new deals.",
     keywords: [name, category, providerName, type, "custom", "manual", "url"].filter(Boolean),
     custom: true,
+    imageUrl: state.customPreview?.image || categoryImageMap[category] || categoryImageMap[type === "service" ? "Streaming" : "Household"],
     providers: [{
       name: providerName,
       subtitle: url ? "Pasted third-party source" : "Manual source",
@@ -1252,6 +1524,7 @@ function clearCustomTrackerForm() {
   customDiscountValueInput.value = "";
   customDiscountLabelInput.value = "";
   customRequirementsInput.value = "";
+  state.customPreview = null;
 }
 
 function addCustomTracker() {
@@ -1439,7 +1712,20 @@ function loadTrackedCatalog() {
     }
 
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : structuredClone(comparisonData);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return structuredClone(comparisonData);
+    }
+    const merged = structuredClone(parsed);
+    const knownIds = new Set(merged.map((item) => item.id));
+    comparisonData.forEach((item) => {
+      if (!knownIds.has(item.id)) {
+        merged.push(structuredClone(item));
+      }
+    });
+    merged.forEach((item) => {
+      item.imageUrl = item.imageUrl || categoryImageMap[item.category] || categoryImageMap[item.type === "service" ? "Streaming" : "Household"];
+    });
+    return merged;
   } catch (error) {
     console.warn("Unable to load tracked catalog.", error);
     return structuredClone(comparisonData);
@@ -1486,6 +1772,28 @@ function formatPercent(value) {
 
 function formatDate(dateString) {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(dateString));
+}
+
+function getInitials(value) {
+  const words = cleanManualText(value, "SmartSave").split(" ").filter(Boolean);
+  return words.slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+}
+
+function setImageWithFallback(imageNode, fallbackNode, imageUrl, label) {
+  const initials = getInitials(label);
+  fallbackNode.textContent = initials;
+  if (!imageUrl) {
+    imageNode.removeAttribute("src");
+    fallbackNode.hidden = false;
+    return;
+  }
+  imageNode.src = imageUrl;
+  imageNode.alt = label;
+  fallbackNode.hidden = true;
+  imageNode.onerror = () => {
+    imageNode.removeAttribute("src");
+    fallbackNode.hidden = false;
+  };
 }
 
 function daysBetween(startDate, endDate) {
@@ -1745,6 +2053,12 @@ function buildCatalogCard(item) {
   const best = item.providerComparisons[0];
   const card = catalogCardTemplate.content.firstElementChild.cloneNode(true);
   card.classList.toggle("is-active", item.id === state.selectedId);
+  setImageWithFallback(
+    card.querySelector(".catalog-image"),
+    card.querySelector(".catalog-fallback"),
+    item.imageUrl,
+    item.name
+  );
   card.querySelector(".catalog-title").textContent = item.name;
   card.querySelector(".catalog-type").textContent = item.type;
   card.querySelector(".catalog-subtitle").textContent = `${item.category} - ${item.matchMode}`;
@@ -1866,11 +2180,13 @@ function renderSelectedItem(item) {
     targetPriceInput.value = "";
     emailAlertInput.value = "";
     textAlertInput.value = "";
+    setImageWithFallback(selectedImage, selectedImageFallback, "", "SmartSave");
     return;
   }
 
   selectedTitle.textContent = item.name;
   selectedDescription.textContent = item.notes;
+  setImageWithFallback(selectedImage, selectedImageFallback, item.imageUrl, item.name);
   selectedBadges.innerHTML = "";
   const badgeLabels = [item.category, item.matchMode, `${item.providerComparisons.length} providers active`];
   if (item.bulkTiers?.length) {
@@ -1915,6 +2231,7 @@ function renderProviders(providers) {
   providers.forEach((provider, index) => {
     const card = providerCardTemplate.content.firstElementChild.cloneNode(true);
     const localMatch = getZipMatch(provider.name, getLocalKindForItem({ category: provider.category }));
+    card.querySelector(".provider-logo").textContent = getInitials(provider.name);
     card.querySelector(".provider-name").textContent = provider.name;
     card.querySelector(".provider-rank").textContent = `#${index + 1}`;
     card.querySelector(".provider-subtitle").textContent = `${provider.subtitle} - Updated ${formatDate(provider.lastChecked)}`;
