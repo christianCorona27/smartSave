@@ -1,4 +1,3 @@
-import type { Config } from "@netlify/functions";
 import { readPublicProductPage } from "./lib/page-reader.mts";
 import {
   getPriceTrackerStore,
@@ -127,6 +126,6 @@ export default async () => {
   console.log(`SmartSave price sweep processed ${processed} tracker(s): ${refreshed} refreshed, ${alerted} alerted, ${failed} failed.`);
 };
 
-export const config: Config = {
+export const config = {
   schedule: "@hourly"
 };

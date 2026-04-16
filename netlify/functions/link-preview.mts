@@ -1,4 +1,3 @@
-import type { Config } from "@netlify/functions";
 import { jsonResponse, readPublicProductPage } from "./lib/page-reader.mts";
 
 export default async (req: Request) => {
@@ -20,6 +19,6 @@ export default async (req: Request) => {
   }
 };
 
-export const config: Config = {
+export const config = {
   path: "/api/link-preview"
 };

@@ -10,7 +10,6 @@
     "@netlify/blobs": "latest"
   },
   "devDependencies": {
-    "@netlify/functions": "latest",
     "netlify-cli": "latest"
   }
 }

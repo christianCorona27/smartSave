@@ -1,4 +1,3 @@
-import type { Config } from "@netlify/functions";
 import { readPublicProductPage, parsePrice } from "./lib/page-reader.mts";
 import {
   buildTrackerKey,
@@ -108,6 +107,6 @@ export default async (req: Request) => {
   });
 };
 
-export const config: Config = {
+export const config = {
   path: "/api/track-url"
 };
