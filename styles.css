@@ -919,6 +919,7 @@ textarea:focus,
 .provider-meta,
 .detail-badges,
 .history-legend,
+.history-points,
 .data-legend,
 .watchlist-meta,
 .planner-meta,
@@ -1058,6 +1059,50 @@ textarea:focus,
 .history-legend-item {
   gap: 0.5rem;
   padding-right: 0.9rem;
+}
+
+.history-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.history-point-card {
+  position: relative;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.86rem 0.92rem 0.86rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(7, 17, 31, 0.46);
+  overflow: hidden;
+}
+
+.history-point-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--point-color, var(--primary));
+}
+
+.history-point-card strong {
+  color: var(--text-strong);
+  font-size: 1.05rem;
+}
+
+.history-point-card span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.history-point-source {
+  color: var(--primary-strong) !important;
+  font-weight: 900;
+}
+
+.history-point-card.is-empty {
+  grid-column: 1 / -1;
+  color: var(--muted-strong);
 }
 
 .history-swatch {
@@ -1336,8 +1381,13 @@ textarea:focus,
   .planner-grid,
   .summary-grid,
   .watchlist-items,
+  .history-points,
   .catalog-list {
     gap: 0.8rem;
+  }
+
+  .history-points {
+    grid-template-columns: 1fr;
   }
 
   .detail-feature,

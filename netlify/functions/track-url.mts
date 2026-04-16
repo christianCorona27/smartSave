@@ -17,11 +17,50 @@ function cleanText(value?: string | null, fallback = "") {
   return cleaned || fallback;
 }
 
-export default async (req: Request) => {
-  if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed." }, 405);
+function publicTrackerPayload(tracker: PriceTracker) {
+  return {
+    id: tracker.id,
+    url: tracker.url,
+    hostname: tracker.hostname,
+    title: tracker.title,
+    description: tracker.description,
+    image: tracker.image,
+    currency: tracker.currency,
+    targetPrice: tracker.targetPrice,
+    currentPrice: getTrackerCurrentPrice(tracker),
+    status: tracker.status,
+    updatedAt: tracker.updatedAt,
+    lastCheckedAt: tracker.lastCheckedAt,
+    lastError: tracker.lastError,
+    failureCount: tracker.failureCount || 0,
+    priceHistory: Array.isArray(tracker.priceHistory) ? tracker.priceHistory : []
+  };
+}
+
+async function handleGet(req: Request) {
+  const requestUrl = new URL(req.url);
+  const id = String(requestUrl.searchParams.get("id") || "").trim();
+  const email = String(requestUrl.searchParams.get("email") || "").trim().toLowerCase();
+
+  if (!id.startsWith("tracker/") || !isValidEmail(email)) {
+    return jsonResponse({ error: "Tracker id and matching email are required." }, 400);
   }
 
+  const store = getPriceTrackerStore();
+  const tracker = await store.get(id, { type: "json" }) as PriceTracker | null;
+
+  if (!tracker) {
+    return jsonResponse({ error: "Tracker not found." }, 404);
+  }
+
+  if (String(tracker.email || "").toLowerCase() !== email) {
+    return jsonResponse({ error: "Tracker email does not match." }, 403);
+  }
+
+  return jsonResponse({ ok: true, tracker: publicTrackerPayload(tracker) });
+}
+
+async function handlePost(req: Request) {
   const payload = await req.json().catch(() => null);
   if (!payload) {
     return jsonResponse({ error: "Invalid JSON payload." }, 400);
@@ -98,13 +137,25 @@ export default async (req: Request) => {
   return jsonResponse({
     ok: true,
     trackerId: id,
-    tracker,
+    tracker: publicTrackerPayload(tracker),
     immediateMatch: getTrackerCurrentPrice(tracker) <= tracker.targetPrice,
     emailConfigured: Boolean(Netlify.env.get("RESEND_API_KEY") && Netlify.env.get("ALERT_FROM_EMAIL")),
     message: getTrackerCurrentPrice(tracker) <= tracker.targetPrice
       ? "Tracker saved. The current price already meets the target, so SmartSave attempted an immediate email alert."
       : "Tracker saved. SmartSave will re-check this public product page on the scheduled backend sweep."
   });
+}
+
+export default async (req: Request) => {
+  if (req.method === "GET") {
+    return handleGet(req);
+  }
+
+  if (req.method === "POST") {
+    return handlePost(req);
+  }
+
+  return jsonResponse({ error: "Method not allowed." }, 405);
 };
 
 export const config = {

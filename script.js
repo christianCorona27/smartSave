@@ -1227,6 +1227,7 @@ const selectedImageFallback = document.querySelector("#selectedImageFallback");
 const selectedBadges = document.querySelector("#selectedBadges");
 const historyChart = document.querySelector("#historyChart");
 const historyLegend = document.querySelector("#historyLegend");
+const historyPoints = document.querySelector("#historyPoints");
 const historyNote = document.querySelector("#historyNote");
 const liveRequirementsText = document.querySelector("#liveRequirementsText");
 const dataModeNote = document.querySelector("#dataModeNote");
@@ -1364,6 +1365,47 @@ function getZipMatch(providerName, kind = null) {
 function setZipMatches(payload) {
   state.zipMatches = Object.fromEntries(payload.matchedProviders.map((provider) => [provider.name, provider]));
   state.zipMatchSummary = payload.summary;
+}
+
+function normalizeTrackerHistory(priceHistory = []) {
+  return priceHistory
+    .map((point) => ({
+      date: point.date,
+      price: Number(point.price)
+    }))
+    .filter((point) => point.date && Number.isFinite(point.price));
+}
+
+function applyBackendTrackerToItem(item, tracker) {
+  if (!item || !tracker) {
+    return false;
+  }
+
+  const provider = item.providers?.[0];
+  if (!provider) {
+    return false;
+  }
+
+  const currentPrice = Number(tracker.currentPrice);
+  const history = normalizeTrackerHistory(tracker.priceHistory);
+  const refreshFailed = ["source-error", "price-missing"].includes(tracker.status);
+
+  item.name = cleanManualText(tracker.title, item.name);
+  item.imageUrl = cleanManualText(tracker.image, item.imageUrl);
+  item.refreshStatus = refreshFailed ? "failed" : "ok";
+
+  provider.name = cleanManualText(tracker.hostname, provider.name);
+  provider.sourceUrl = tracker.url || provider.sourceUrl;
+  provider.status = refreshFailed ? "Refresh failed" : "Live URL source";
+  provider.lastChecked = tracker.lastCheckedAt || tracker.updatedAt || provider.lastChecked;
+  provider.currentPrice = Number.isFinite(currentPrice) ? currentPrice : provider.currentPrice;
+  provider.regularPrice = Math.max(provider.regularPrice || 0, provider.currentPrice || 0);
+  provider.history = history.length ? history : provider.history;
+  provider.dealRequirements = refreshFailed && tracker.lastError
+    ? Array.from(new Set([`Last refresh failed: ${tracker.lastError}`, ...(provider.dealRequirements || [])]))
+    : provider.dealRequirements;
+
+  return true;
 }
 
 async function applyZipMatch() {
@@ -1712,6 +1754,11 @@ async function syncWatchWithBackend(item, best, watch) {
     throw new Error(payload.error || "Unable to save the backend alert right now.");
   }
 
+  if (payload.tracker) {
+    applyBackendTrackerToItem(item, payload.tracker);
+    saveTrackedCatalog(state.items);
+  }
+
   state.watches[item.id] = {
     ...state.watches[item.id],
     backendSyncedAt: new Date().toISOString(),
@@ -1721,6 +1768,46 @@ async function syncWatchWithBackend(item, best, watch) {
   renderWatchlist();
 
   return payload.message || "Backend URL tracker saved.";
+}
+
+async function refreshSyncedTrackerHistories() {
+  if (!hasBackendRuntime()) {
+    return;
+  }
+
+  const entries = Object.entries(state.watches)
+    .filter(([, watch]) => watch.backendSubscriptionId && watch.email);
+
+  if (!entries.length) {
+    return;
+  }
+
+  let updated = 0;
+  await Promise.all(entries.map(async ([itemId, watch]) => {
+    const item = getItemById(itemId);
+    if (!item) {
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        id: watch.backendSubscriptionId,
+        email: watch.email
+      });
+      const response = await fetch(`/api/track-url?${params.toString()}`);
+      const payload = await readJsonSafe(response);
+      if (response.ok && payload.tracker && applyBackendTrackerToItem(item, payload.tracker)) {
+        updated += 1;
+      }
+    } catch (error) {
+      console.warn("Unable to refresh backend tracker history.", error);
+    }
+  }));
+
+  if (updated) {
+    saveTrackedCatalog(state.items);
+    renderApp();
+  }
 }
 
 function getItemById(itemId) {
@@ -2448,6 +2535,7 @@ function renderSelectedItem(item) {
     plannerGrid.innerHTML = '<div class="empty-state">Planner tips will appear here once a tracked item is selected.</div>';
     historyNote.textContent = "Price history will appear once a tracked item is selected.";
     historyLegend.innerHTML = "";
+    historyPoints.innerHTML = "";
     historyChart.innerHTML = "";
     targetPriceInput.value = "";
     emailAlertInput.value = "";
@@ -2582,17 +2670,33 @@ function renderProviders(providers) {
 function renderHistoryChart(providers) {
   historyChart.innerHTML = "";
   historyLegend.innerHTML = "";
+  historyPoints.innerHTML = "";
 
   if (!providers.length) {
     historyNote.textContent = "No history available for this view.";
     return;
   }
 
-  const allPoints = providers.flatMap((provider) => provider.history);
+  const allPoints = providers.flatMap((provider) => (provider.history || [])
+    .filter((point) => Number.isFinite(point.price) && point.date)
+    .map((point) => ({
+      ...point,
+      providerName: provider.name,
+      billing: provider.billing,
+      color: providerPalette[provider.name] || "#f6f0e8"
+    })));
+
+  if (!allPoints.length) {
+    historyNote.textContent = "No tracked price points yet. The chart structure will fill in as prices are captured.";
+    renderRecentHistoryPoints([]);
+    return;
+  }
+
   const values = allPoints.map((point) => point.price);
   const minPrice = Math.min(...values);
   const maxPrice = Math.max(...values);
-  const dates = providers[0].history.map((point) => point.date);
+  const dates = Array.from(new Set(allPoints.map((point) => point.date)))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   const width = 920;
   const height = 280;
   const padding = { top: 20, right: 24, bottom: 46, left: 62 };
@@ -2616,6 +2720,12 @@ function renderHistoryChart(providers) {
   };
 
   historyChart.appendChild(createSvg("rect", { x: 0, y: 0, width, height, fill: "transparent" }));
+  historyChart.appendChild(createSvg("path", {
+    d: `M ${padding.left} ${padding.top + chartHeight} L ${width - padding.right} ${padding.top + chartHeight}`,
+    fill: "none",
+    stroke: "rgba(148, 163, 184, 0.18)",
+    "stroke-width": 1
+  }));
 
   [0, 0.5, 1].forEach((step) => {
     const price = minPrice + (maxPrice - minPrice) * step;
@@ -2640,7 +2750,14 @@ function renderHistoryChart(providers) {
     historyChart.appendChild(label);
   });
 
+  const visibleDateIndexes = new Set(dates.length <= 4
+    ? dates.map((_, index) => index)
+    : [0, Math.floor((dates.length - 1) / 2), dates.length - 1]);
+
   dates.forEach((date, index) => {
+    if (!visibleDateIndexes.has(index)) {
+      return;
+    }
     const x = indexToX(index);
     const text = createSvg("text", {
       x,
@@ -2655,22 +2772,44 @@ function renderHistoryChart(providers) {
 
   providers.forEach((provider) => {
     const color = providerPalette[provider.name] || "#f6f0e8";
-    const pathData = provider.history
-      .map((point, index) => `${index === 0 ? "M" : "L"} ${indexToX(index)} ${valueToY(point.price)}`)
+    const providerHistory = (provider.history || []).filter((point) => Number.isFinite(point.price) && point.date);
+    const pathData = providerHistory
+      .map((point, index) => {
+        const dateIndex = dates.indexOf(point.date);
+        return `${index === 0 ? "M" : "L"} ${indexToX(dateIndex)} ${valueToY(point.price)}`;
+      })
       .join(" ");
 
-    historyChart.appendChild(createSvg("path", {
-      d: pathData,
-      fill: "none",
-      stroke: color,
-      "stroke-width": 3,
-      "stroke-linecap": "round",
-      "stroke-linejoin": "round"
-    }));
+    if (providerHistory.length > 1) {
+      historyChart.appendChild(createSvg("path", {
+        d: pathData,
+        fill: "none",
+        stroke: color,
+        "stroke-width": 3,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      }));
+    } else if (providerHistory.length === 1) {
+      const point = providerHistory[0];
+      const x = indexToX(dates.indexOf(point.date));
+      const y = valueToY(point.price);
+      historyChart.appendChild(createSvg("line", {
+        x1: Math.max(padding.left, x - 62),
+        y1: y,
+        x2: Math.min(width - padding.right, x + 62),
+        y2: y,
+        stroke: color,
+        "stroke-width": 3,
+        "stroke-linecap": "round",
+        "stroke-dasharray": "8 8",
+        opacity: 0.84
+      }));
+    }
 
-    provider.history.forEach((point, index) => {
+    providerHistory.forEach((point) => {
+      const dateIndex = dates.indexOf(point.date);
       historyChart.appendChild(createSvg("circle", {
-        cx: indexToX(index),
+        cx: indexToX(dateIndex),
         cy: valueToY(point.price),
         r: 4,
         fill: color
@@ -2684,7 +2823,42 @@ function renderHistoryChart(providers) {
     historyLegend.appendChild(legendItem);
   });
 
-  historyNote.textContent = `${formatDate(dates[0])} to ${formatDate(dates[dates.length - 1])} - ${providers.length} providers visible`;
+  renderRecentHistoryPoints(allPoints);
+
+  const pointText = allPoints.length === 1 ? "1 tracked price point" : `${allPoints.length} tracked price points`;
+  const liveLimited = providers.some((provider) => provider.dataMode === "live" && (provider.history || []).length < 2);
+  historyNote.textContent = `${formatDate(dates[0])} to ${formatDate(dates[dates.length - 1])} - ${pointText}. ${liveLimited ? "More points will appear after scheduled refreshes." : `${providers.length} providers visible.`}`;
+}
+
+function renderRecentHistoryPoints(points) {
+  historyPoints.innerHTML = "";
+
+  if (!points.length) {
+    const empty = document.createElement("div");
+    empty.className = "history-point-card is-empty";
+    empty.textContent = "No captured prices yet. Saved live trackers start with one point, then add more during scheduled refreshes.";
+    historyPoints.appendChild(empty);
+    return;
+  }
+
+  const recentPoints = [...points]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 6);
+
+  recentPoints.forEach((point) => {
+    const card = document.createElement("article");
+    card.className = "history-point-card";
+    card.style.setProperty("--point-color", point.color);
+    const source = document.createElement("span");
+    source.className = "history-point-source";
+    source.textContent = point.providerName;
+    const price = document.createElement("strong");
+    price.textContent = formatCurrency(point.price, point.billing);
+    const date = document.createElement("span");
+    date.textContent = formatDate(point.date);
+    card.append(source, price, date);
+    historyPoints.appendChild(card);
+  });
 }
 
 function renderZipMatches() {
@@ -3012,6 +3186,7 @@ function init() {
   zipCodeInput.value = state.zipCode;
   attachEvents();
   renderApp();
+  void refreshSyncedTrackerHistories();
   if (state.zipCode) {
     void applyZipMatch();
   }
