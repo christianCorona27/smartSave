@@ -552,7 +552,7 @@ const comparisonData = [
   }
 ];
 
-const STORAGE_KEY = "smartsave-tracked-catalog-v1";
+const STORAGE_KEY = "smartsave-tracked-catalog-v2";
 const providerPalette = {
   Amazon: "#ffb74d",
   "Best Buy": "#7db0ff",
@@ -1142,7 +1142,7 @@ const categoryImageMap = {
 comparisonData.forEach((item) => {
   item.imageUrl = item.imageUrl || categoryImageMap[item.category] || categoryImageMap[item.type === "service" ? "Streaming" : "Household"];
 });
-const WATCH_STORAGE_KEY = "smartsave-watch-settings-v1";
+const WATCH_STORAGE_KEY = "smartsave-watch-settings-v2";
 const ZIP_STORAGE_KEY = "smartsave-local-zip-v1";
 
 const state = {
@@ -1417,7 +1417,7 @@ function applyPreviewToCustomForm(preview) {
     customRegularPriceInput.value = preview.price;
   }
   if (!customCategoryInput.value.trim()) {
-    customCategoryInput.value = preview.hostname ? `Web - ${preview.hostname.replace(/^www\./, "")}` : "Web source";
+    customCategoryInput.value = preview.hostname ? `Web - ${preview.hostname.replace(/^www\./, "")}` : "Web product";
   }
 }
 
@@ -1425,15 +1425,15 @@ async function readCustomUrl() {
   const url = customUrlInput.value.trim();
   state.customPreview = null;
   if (!url) {
-    customSourceStatus.textContent = "Paste a product or service URL first.";
+    customSourceStatus.textContent = "Paste a public product URL first.";
     return;
   }
   if (!hasBackendRuntime()) {
-    customSourceStatus.textContent = "URL reading needs the Netlify backend. You can still enter the tracker manually.";
+    customSourceStatus.textContent = "URL reading needs the Netlify backend. Run with Netlify dev or use the deployed site.";
     return;
   }
 
-  customSourceStatus.textContent = "Reading public page metadata...";
+  customSourceStatus.textContent = "Reading public product page metadata...";
   try {
     const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
     const payload = await readJsonSafe(response);
@@ -1441,25 +1441,29 @@ async function readCustomUrl() {
       throw new Error(payload.error || "SmartSave could not read that URL.");
     }
     applyPreviewToCustomForm(payload);
-    customSourceStatus.textContent = payload.message || "Metadata loaded. Confirm the price and discount before adding.";
+    customSourceStatus.textContent = payload.message || "Metadata loaded. Confirm the price, set a target, and save the tracker.";
   } catch (error) {
-    customSourceStatus.textContent = error.message || "Unable to read that URL. Enter the details manually.";
+    customSourceStatus.textContent = error.message || "Unable to read that URL. Try another public product page.";
   }
 }
 
 function buildCustomTracker() {
   const url = customUrlInput.value.trim();
   const name = cleanManualText(customNameInput.value, "Custom tracked item");
-  const type = customTypeSelect.value === "service" ? "service" : "product";
-  const category = cleanManualText(customCategoryInput.value, type === "service" ? "Custom service" : "Custom product");
+  const type = "product";
+  const category = cleanManualText(customCategoryInput.value, "Pasted product");
   const currentPrice = parseMoneyInput(customCurrentPriceInput.value);
   const regularPrice = parseMoneyInput(customRegularPriceInput.value) ?? currentPrice;
   const discountValue = parseMoneyInput(customDiscountValueInput.value);
   const discountType = customDiscountTypeSelect.value === "fixed" ? "fixed" : "percent";
-  const billing = type === "service" ? "monthly" : "one-time";
+  const billing = "one-time";
+
+  if (!url) {
+    throw new Error("Paste a public product URL before saving a live tracker.");
+  }
 
   if (!currentPrice) {
-    throw new Error("Enter a current price before adding this tracker.");
+    throw new Error("Extract a current price before saving this tracker. If the page has no readable price metadata, try another public product URL.");
   }
 
   const providerName = getHostname(url);
@@ -1482,20 +1486,19 @@ function buildCustomTracker() {
     name,
     type,
     category,
-    matchMode: url ? "Pasted URL tracker" : "Manual tracker",
-    notes: url
-      ? `User-added tracker from ${providerName}. URL metadata is a starting point; confirm live price and deal terms before checkout.`
-      : "User-added manual tracker. Update the current price when you see new deals.",
-    keywords: [name, category, providerName, type, "custom", "manual", "url"].filter(Boolean),
+    matchMode: "Live URL tracker",
+    notes: `Live tracker from ${providerName}. SmartSave stores the URL and target price, then the backend re-checks the public page on the scheduled sweep.`,
+    keywords: [name, category, providerName, type, "custom", "live", "url", "tracker"].filter(Boolean),
     custom: true,
+    sourceUrl: url,
     imageUrl: state.customPreview?.image || categoryImageMap[category] || categoryImageMap[type === "service" ? "Streaming" : "Household"],
     providers: [{
       name: providerName,
-      subtitle: url ? "Pasted third-party source" : "Manual source",
+      subtitle: "Public product page",
       billing,
       regularPrice: regularPrice ?? currentPrice,
       currentPrice,
-      status: url ? "URL metadata / user confirmed" : "Manual price",
+      status: "Live URL source",
       lastChecked: today,
       sourceUrl: url,
       discounts: {
@@ -1505,7 +1508,7 @@ function buildCustomTracker() {
       },
       coupons,
       dealRequirements: [
-        ...(url ? [`Open ${providerName} to confirm current price, stock, shipping, and coupon availability.`] : ["Manual tracker; confirm current price before purchase."]),
+        `Open ${providerName} to confirm stock, shipping, tax, and checkout terms before purchase.`,
         ...requirements
       ],
       history: [
@@ -1527,9 +1530,19 @@ function clearCustomTrackerForm() {
   state.customPreview = null;
 }
 
-function addCustomTracker() {
+async function addCustomTracker() {
   try {
     const tracker = buildCustomTracker();
+    const targetPrice = parseMoneyInput(targetPriceInput.value);
+    const email = emailAlertInput.value.trim();
+
+    if (!targetPrice) {
+      throw new Error("Enter a target price greater than 0 before saving this live tracker.");
+    }
+    if (!email) {
+      throw new Error("Enter an email address so SmartSave can send the price alert.");
+    }
+
     state.items = [tracker, ...state.items];
     state.selectedId = tracker.id;
     state.searchTerm = "";
@@ -1537,9 +1550,27 @@ function addCustomTracker() {
     state.selectedProductCategory = "";
     state.selectedServiceCategory = "";
     searchInput.value = "";
+    const best = getProviderComparison(tracker.providers[0], tracker);
+    state.watches[tracker.id] = {
+      itemName: tracker.name,
+      targetPrice,
+      email,
+      text: "",
+      updatedAt: new Date().toISOString(),
+      lastNotifiedPrice: null
+    };
     saveTrackedCatalog(state.items);
+    saveWatches();
+    let backendMessage = "Saved locally. Backend sync did not run.";
+    try {
+      backendMessage = await syncWatchWithBackend(tracker, best, state.watches[tracker.id]);
+    } catch (syncError) {
+      backendMessage = syncError.message || "Backend sync failed, but the tracker is saved locally.";
+    }
     clearCustomTrackerForm();
-    customSourceStatus.textContent = `Added ${tracker.name}. It is now searchable and can be watched for alerts.`;
+    targetPriceInput.value = "";
+    emailAlertInput.value = "";
+    customSourceStatus.textContent = `Saved ${tracker.name}. ${backendMessage}`;
     renderApp();
   } catch (error) {
     customSourceStatus.textContent = error.message || "Unable to add this tracker.";
@@ -1547,31 +1578,31 @@ function addCustomTracker() {
 }
 
 async function syncWatchWithBackend(item, best, watch) {
-  if (!watch.email && !watch.text) {
-    return "Saved locally. Add an email or text number if you want the backend to send real alerts too.";
+  const sourceUrl = best.sourceUrl || item.sourceUrl;
+
+  if (!sourceUrl) {
+    return "Demo catalog watches stay local. Backend email alerts require a pasted public product URL.";
+  }
+
+  if (!watch.email) {
+    return "Saved locally. Add an email address to sync this URL tracker to the backend.";
   }
 
   if (!hasBackendRuntime()) {
-    return "Saved locally. Real email and text alerts become active when this build runs through Netlify or another backend-enabled host.";
+    return "Saved locally. Backend email alerts become active when this build runs through Netlify or Netlify dev.";
   }
 
-  const response = await fetch("/api/watch-alerts", {
+  const response = await fetch("/api/track-url", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      itemId: item.id,
-      itemName: item.name,
-      itemCategory: item.category,
-      billing: best.billing,
+      url: sourceUrl,
+      confirmedTitle: item.name,
+      confirmedPrice: best.currentPrice,
       targetPrice: watch.targetPrice,
-      currentPrice: best.finalPrice,
-      bestProviderName: best.name,
-      zipCode: state.zipCode,
-      email: watch.email,
-      text: watch.text,
-      profile: state.profile
+      email: watch.email
     })
   });
 
@@ -1583,12 +1614,12 @@ async function syncWatchWithBackend(item, best, watch) {
   state.watches[item.id] = {
     ...state.watches[item.id],
     backendSyncedAt: new Date().toISOString(),
-    backendSubscriptionId: payload.subscriptionId || null
+    backendSubscriptionId: payload.trackerId || null
   };
   saveWatches();
   renderWatchlist();
 
-  return payload.message || "Backend alert saved.";
+  return payload.message || "Backend URL tracker saved.";
 }
 
 function getItemById(itemId) {
@@ -1672,12 +1703,17 @@ async function saveSelectedWatch() {
     return;
   }
 
-  const targetPrice = Number.parseFloat(targetPriceInput.value);
+  const targetPrice = parseMoneyInput(targetPriceInput.value);
+  if (!targetPrice) {
+    alertStatusText.textContent = "Enter a target price greater than 0 before saving a watch.";
+    return;
+  }
+
   state.watches[item.id] = {
     itemName: item.name,
-    targetPrice: Number.isFinite(targetPrice) ? targetPrice : best.finalPrice,
+    targetPrice,
     email: emailAlertInput.value.trim(),
-    text: textAlertInput.value.trim(),
+    text: "",
     updatedAt: new Date().toISOString(),
     lastNotifiedPrice: null
   };
@@ -2069,7 +2105,11 @@ function buildCatalogCard(item) {
   card.querySelector(".catalog-count").textContent = `${item.providerComparisons.length} providers`;
 
   const metaNode = card.querySelector(".catalog-meta");
-  [item.matchMode, `Updated ${formatDate(best.lastChecked)}`].forEach((label) => {
+  [
+    item.custom ? "Live URL tracker" : "Demo data",
+    item.matchMode,
+    `Updated ${formatDate(best.lastChecked)}`
+  ].forEach((label) => {
     const pill = document.createElement("span");
     pill.className = "meta-pill";
     pill.textContent = label;
@@ -2185,10 +2225,15 @@ function renderSelectedItem(item) {
   }
 
   selectedTitle.textContent = item.name;
-  selectedDescription.textContent = item.notes;
+  selectedDescription.textContent = item.custom ? item.notes : `Demo-only scenario: ${item.notes}`;
   setImageWithFallback(selectedImage, selectedImageFallback, item.imageUrl, item.name);
   selectedBadges.innerHTML = "";
-  const badgeLabels = [item.category, item.matchMode, `${item.providerComparisons.length} providers active`];
+  const badgeLabels = [
+    item.custom ? "Live URL tracker" : "Demo data",
+    item.category,
+    item.matchMode,
+    `${item.providerComparisons.length} providers active`
+  ];
   if (item.bulkTiers?.length) {
     badgeLabels.push("Bulk pricing");
   }
@@ -2421,7 +2466,7 @@ function renderWatchlist() {
   watchlistItems.innerHTML = "";
   const entries = Object.entries(state.watches);
   if (!entries.length) {
-    watchlistItems.innerHTML = '<div class="empty-state">Items you watch for sale alerts will show up here.</div>';
+    watchlistItems.innerHTML = '<div class="empty-state">Saved URL trackers and local demo watches will show up here.</div>';
     return;
   }
 
@@ -2444,7 +2489,7 @@ function renderWatchlist() {
       </div>
       <div class="watchlist-meta">
         <span class="meta-pill">${watch.email || "No email"}</span>
-        <span class="meta-pill">${watch.text || "No text"}</span>
+        <span class="meta-pill">${item.custom ? "Live URL tracker" : "Local demo watch"}</span>
         ${watch.backendSyncedAt ? `<span class="meta-pill">Backend synced</span>` : ""}
       </div>
       <div class="watchlist-actions">
@@ -2559,8 +2604,8 @@ function renderApp() {
   renderZipMatches();
   renderWatchlist();
   maybeTriggerWatchNotifications();
-  dataModeNote.textContent = `Source mode: ${Object.values(state.providerVisibility).filter(Boolean).length} provider adapters enabled in this comparison view.`;
-  liveRequirementsText.textContent = "This build now includes Netlify-ready backend routes for ZIP matching and alert subscriptions. Configure email or SMS provider secrets to make those notifications fully live.";
+  dataModeNote.textContent = "Live workflow: pasted URL trackers are stored in Netlify Blobs and checked hourly. Demo catalog data is labeled separately.";
+  liveRequirementsText.textContent = "The seeded catalog below is demo-only. Use the pasted URL tracker for backend price refreshes and email alerts.";
 }
 
 function attachEvents() {
@@ -2663,7 +2708,9 @@ function attachEvents() {
     }
   });
 
-  addCustomItemBtn.addEventListener("click", addCustomTracker);
+  addCustomItemBtn.addEventListener("click", () => {
+    void addCustomTracker();
+  });
 
   saveWatchBtn.addEventListener("click", () => {
     void saveSelectedWatch();

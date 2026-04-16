@@ -1,7 +1,7 @@
 :root {
   --bg: #050b17;
-  --surface: #d7efff;
-  --surface-soft: #8fd3ff;
+  --surface: #dff5ff;
+  --surface-soft: #8bd8ff;
   --text: #edf7ff;
   --ink: #06111f;
   --muted: rgba(237, 247, 255, 0.72);
@@ -12,7 +12,7 @@
   --teal: #22d3ee;
   --green: #9bf6ff;
   --blue: #60a5fa;
-  --yellow: #c4b5fd;
+  --yellow: #bfdbfe;
   --berry: #818cf8;
   --shadow: 0 26px 80px rgba(0, 8, 24, 0.58);
   --radius-lg: 28px;
@@ -136,7 +136,7 @@ button {
   pointer-events: none;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.11), transparent 34%),
-    radial-gradient(circle at top right, rgba(255, 227, 110, 0.12), transparent 28%);
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 28%);
 }
 
 .hero-copy {
@@ -145,9 +145,9 @@ button {
   justify-content: flex-end;
   padding: clamp(1.7rem, 4vw, 4rem);
   background:
-    radial-gradient(circle at 12% 12%, rgba(255, 95, 109, 0.2), transparent 34%),
-    radial-gradient(circle at 88% 18%, rgba(25, 211, 181, 0.18), transparent 32%),
-    linear-gradient(180deg, rgba(255, 248, 236, 0.12), rgba(255, 248, 236, 0.035));
+    radial-gradient(circle at 12% 12%, rgba(96, 165, 250, 0.22), transparent 34%),
+    radial-gradient(circle at 88% 18%, rgba(34, 211, 238, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(224, 242, 254, 0.12), rgba(224, 242, 254, 0.035));
 }
 
 .hero-meter {
@@ -178,7 +178,7 @@ h1 {
   line-height: 0.94;
   letter-spacing: -0.05em;
   color: transparent;
-  background: linear-gradient(110deg, #fff8ec 4%, #ffe36e 32%, #19d3b5 68%, #57c7ff 96%);
+  background: linear-gradient(110deg, #f8fbff 4%, #bfdbfe 32%, #38bdf8 68%, #5eead4 96%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -234,7 +234,7 @@ h1 {
 .solid-button {
   color: var(--ink);
   background: linear-gradient(135deg, var(--yellow), var(--accent) 48%, var(--coral));
-  box-shadow: 0 12px 32px rgba(255, 138, 61, 0.24);
+  box-shadow: 0 12px 32px rgba(56, 189, 248, 0.24);
 }
 
 .ghost-button {
@@ -262,6 +262,33 @@ h1 {
 .meter-steps {
   display: grid;
   gap: 1rem;
+}
+
+.workflow-steps {
+  counter-reset: workflow;
+  list-style: none;
+  padding-left: 0;
+}
+
+.workflow-steps li {
+  counter-increment: workflow;
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  color: var(--muted);
+}
+
+.workflow-steps li::before {
+  content: counter(workflow);
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--surface), var(--accent));
+  font-weight: 800;
 }
 
 .meter-footnote {
@@ -303,6 +330,22 @@ h1 {
 .catalog-shell,
 .detail-shell {
   padding: 1.35rem;
+}
+
+.primary-tracker-panel {
+  border-color: rgba(56, 189, 248, 0.5);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.18), transparent 35%),
+    linear-gradient(180deg, rgba(224, 242, 254, 0.105), rgba(125, 211, 252, 0.035));
+}
+
+.demo-panel,
+.demo-discounts-panel {
+  border-style: dashed;
+}
+
+.hidden-maintenance-fields {
+  display: none;
 }
 
 .panel-heading,
@@ -382,9 +425,9 @@ h1 {
 }
 
 .summary-item:nth-child(2) {
-  border-color: rgba(255, 227, 110, 0.36);
+  border-color: rgba(96, 165, 250, 0.36);
   background:
-    radial-gradient(circle at top right, rgba(255, 227, 110, 0.16), transparent 46%),
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 46%),
     rgba(10, 10, 10, 0.2);
 }
 
@@ -437,7 +480,7 @@ h1 {
   align-items: center;
   padding: 0.8rem 0.9rem;
   border-color: rgba(25, 211, 181, 0.2);
-  background: linear-gradient(135deg, rgba(25, 211, 181, 0.09), rgba(255, 138, 61, 0.06));
+  background: linear-gradient(135deg, rgba(25, 211, 181, 0.09), rgba(56, 189, 248, 0.06));
 }
 
 .source-pill span {
@@ -722,7 +765,7 @@ textarea:focus,
 
 .catalog-card.is-active {
   background:
-    linear-gradient(135deg, rgba(25, 211, 181, 0.16), rgba(255, 138, 61, 0.14)),
+    linear-gradient(135deg, rgba(25, 211, 181, 0.16), rgba(56, 189, 248, 0.14)),
     rgba(10, 10, 10, 0.22);
   border-color: rgba(25, 211, 181, 0.5);
   box-shadow: 0 18px 42px rgba(25, 211, 181, 0.1);
@@ -889,7 +932,7 @@ textarea:focus,
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background:
-    linear-gradient(135deg, rgba(255, 227, 110, 0.08), rgba(25, 211, 181, 0.06)),
+    linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(25, 211, 181, 0.06)),
     rgba(10, 10, 10, 0.18);
   padding: 0.95rem;
   display: grid;

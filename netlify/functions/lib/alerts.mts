@@ -1,47 +1,50 @@
 import { getDeployStore, getStore } from "@netlify/blobs";
 
-export interface WatchSubscription {
+export interface PricePoint {
+  date: string;
+  price: number;
+}
+
+export interface PriceTracker {
   id: string;
-  itemId: string;
-  itemName: string;
-  itemCategory: string;
-  billing: string;
+  url: string;
+  hostname: string;
+  title: string;
+  description: string;
+  image: string;
+  currency: string;
   targetPrice: number;
-  currentPrice: number;
-  bestProviderName: string;
-  zipCode: string;
-  email?: string;
-  text?: string;
-  profile: {
-    student: boolean;
-    senior: boolean;
-    service: boolean;
-  };
+  email: string;
+  lastPrice: number;
+  lastConfidence: "high" | "medium" | "low";
+  status: "tracking" | "manual-start" | "price-missing" | "source-error" | "alerted";
   createdAt: string;
   updatedAt: string;
-  lastNotifiedAt?: string | null;
-  lastNotifiedPrice?: number | null;
+  lastCheckedAt: string;
+  lastAlertedAt?: string | null;
+  lastAlertedPrice?: number | null;
+  priceHistory: PricePoint[];
 }
 
 function getEnv(name: string) {
   return Netlify.env.get(name) || "";
 }
 
-export function getAlertsStore() {
+export function getPriceTrackerStore() {
   if (Netlify.context?.deploy?.context === "production") {
-    return getStore("smartsave-alerts", { consistency: "strong" });
+    return getStore("smartsave-price-trackers", { consistency: "strong" });
   }
 
-  return getDeployStore("smartsave-alerts");
+  return getDeployStore("smartsave-price-trackers");
 }
 
-export function buildSubscriptionKey(itemId: string, email?: string, text?: string) {
-  const contact = [email?.toLowerCase().trim(), text?.replace(/[^\d]/g, "")]
-    .filter(Boolean)
-    .join("-");
+export function buildTrackerKey(url: string, email: string) {
+  const encoded = Buffer.from(`${email.toLowerCase().trim()}|${url.trim()}`).toString("base64url");
+  return `tracker/${encoded.slice(0, 160)}`;
+}
 
-  const safeContact = (contact || "browser-only").replace(/[^a-z0-9-]/gi, "-").slice(0, 80);
-  return `subscription/${itemId}-${safeContact}`;
+export function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 export function jsonResponse(payload: unknown, status = 200) {
@@ -53,40 +56,37 @@ export function jsonResponse(payload: unknown, status = 200) {
   });
 }
 
-function buildAlertMessage(subscription: WatchSubscription) {
-  const priceText = new Intl.NumberFormat("en-US", {
+function formatCurrency(value: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
-    minimumFractionDigits: subscription.currentPrice % 1 === 0 ? 0 : 2,
+    currency,
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2
-  }).format(subscription.currentPrice);
+  }).format(value);
+}
 
-  const targetText = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: subscription.targetPrice % 1 === 0 ? 0 : 2,
-    maximumFractionDigits: 2
-  }).format(subscription.targetPrice);
+function buildAlertMessage(tracker: PriceTracker) {
+  const priceText = formatCurrency(tracker.lastPrice, tracker.currency);
+  const targetText = formatCurrency(tracker.targetPrice, tracker.currency);
+  const safeTitle = tracker.title.replace(/[<>]/g, "");
+  const safeUrl = tracker.url.replace(/"/g, "&quot;");
 
   return {
-    subject: `${subscription.itemName} hit your SmartSave target`,
-    text: `${subscription.itemName} is now ${priceText} from ${subscription.bestProviderName}, which meets your target of ${targetText}.`,
-    html: `<p><strong>${subscription.itemName}</strong> is now <strong>${priceText}</strong> from ${subscription.bestProviderName}.</p><p>Your target was ${targetText}.</p>`
+    subject: `${tracker.title} hit your SmartSave target`,
+    text: `${tracker.title} is now ${priceText}, which meets your target of ${targetText}. Check it here: ${tracker.url}`,
+    html: `<p><strong>${safeTitle}</strong> is now <strong>${priceText}</strong>, which meets your target of ${targetText}.</p><p><a href="${safeUrl}">Open the product page</a></p>`
   };
 }
 
-export async function sendEmailNotification(subscription: WatchSubscription) {
-  if (!subscription.email) {
-    return false;
-  }
-
+export async function sendPriceAlertEmail(tracker: PriceTracker) {
   const apiKey = getEnv("RESEND_API_KEY");
   const fromEmail = getEnv("ALERT_FROM_EMAIL");
-  if (!apiKey || !fromEmail) {
+
+  if (!apiKey || !fromEmail || !tracker.email) {
     return false;
   }
 
-  const message = buildAlertMessage(subscription);
+  const message = buildAlertMessage(tracker);
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -95,7 +95,7 @@ export async function sendEmailNotification(subscription: WatchSubscription) {
     },
     body: JSON.stringify({
       from: fromEmail,
-      to: [subscription.email],
+      to: [tracker.email],
       subject: message.subject,
       html: message.html,
       text: message.text
@@ -103,49 +103,4 @@ export async function sendEmailNotification(subscription: WatchSubscription) {
   });
 
   return response.ok;
-}
-
-export async function sendTextNotification(subscription: WatchSubscription) {
-  if (!subscription.text) {
-    return false;
-  }
-
-  const accountSid = getEnv("TWILIO_ACCOUNT_SID");
-  const authToken = getEnv("TWILIO_AUTH_TOKEN");
-  const fromNumber = getEnv("TWILIO_FROM_NUMBER");
-
-  if (!accountSid || !authToken || !fromNumber) {
-    return false;
-  }
-
-  const message = buildAlertMessage(subscription);
-  const basicAuth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-  const body = new URLSearchParams({
-    To: subscription.text,
-    From: fromNumber,
-    Body: message.text
-  });
-
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body
-  });
-
-  return response.ok;
-}
-
-export async function sendWatchNotifications(subscription: WatchSubscription) {
-  const [emailSent, textSent] = await Promise.all([
-    sendEmailNotification(subscription),
-    sendTextNotification(subscription)
-  ]);
-
-  return {
-    emailSent,
-    textSent
-  };
 }
