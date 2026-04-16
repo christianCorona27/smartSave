@@ -29,10 +29,10 @@ function getEnv(name: string) {
 
 export function getAlertsStore() {
   if (Netlify.context?.deploy?.context === "production") {
-    return getStore("pricepilot-alerts", { consistency: "strong" });
+    return getStore("smartsave-alerts", { consistency: "strong" });
   }
 
-  return getDeployStore("pricepilot-alerts");
+  return getDeployStore("smartsave-alerts");
 }
 
 export function buildSubscriptionKey(itemId: string, email?: string, text?: string) {
@@ -69,7 +69,7 @@ function buildAlertMessage(subscription: WatchSubscription) {
   }).format(subscription.targetPrice);
 
   return {
-    subject: `${subscription.itemName} hit your PricePilot target`,
+    subject: `${subscription.itemName} hit your SmartSave target`,
     text: `${subscription.itemName} is now ${priceText} from ${subscription.bestProviderName}, which meets your target of ${targetText}.`,
     html: `<p><strong>${subscription.itemName}</strong> is now <strong>${priceText}</strong> from ${subscription.bestProviderName}.</p><p>Your target was ${targetText}.</p>`
   };

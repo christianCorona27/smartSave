@@ -552,7 +552,7 @@ const comparisonData = [
   }
 ];
 
-const STORAGE_KEY = "pricepilot-tracked-catalog-v3";
+const STORAGE_KEY = "smartsave-tracked-catalog-v1";
 const providerPalette = {
   Amazon: "#ffb74d",
   "Best Buy": "#7db0ff",
@@ -876,8 +876,8 @@ comparisonData.push(
   }
 );
 
-const WATCH_STORAGE_KEY = "pricepilot-watch-settings-v1";
-const ZIP_STORAGE_KEY = "pricepilot-local-zip-v1";
+const WATCH_STORAGE_KEY = "smartsave-watch-settings-v1";
+const ZIP_STORAGE_KEY = "smartsave-local-zip-v1";
 
 const state = {
   items: [],

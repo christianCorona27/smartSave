@@ -1,15 +1,16 @@
-# PricePilot Compare
+# SmartSave
 
-PricePilot Compare is a search-first comparison dashboard for products, services, cars, and home-loan APR scenarios. It helps shoppers compare current prices, coupons, eligibility discounts, deal requirements, watchlists, ZIP-based local matching, and price history across multiple retailers and providers in one interface.
+SmartSave is a search-first comparison dashboard for products, services, cars, and home-loan APR scenarios. It helps shoppers compare current prices, coupons, eligibility discounts, deal requirements, watchlists, ZIP-based local matching, and price history across multiple retailers and providers in one interface.
 
 ## Live Demo
 
-- Frontend demo: [PricePilot Compare](https://christiancorona27.github.io/pricepilot-compare-app/)
+- Frontend demo: [SmartSave](https://christiancorona27.github.io/pricepilot-compare-app/)
 - Repo: [christianCorona27/pricepilot-compare-app](https://github.com/christianCorona27/pricepilot-compare-app)
+- Current note: the public app name is SmartSave, while the GitHub repo slug is still pricepilot-compare-app.
 
 ## What It Does
 
-PricePilot Compare is built to answer a more realistic shopping question than just "what is the listed price?"
+SmartSave is built to answer a more realistic shopping question than just "what is the listed price?"
 
 It compares:
 
