@@ -1923,6 +1923,8 @@ function getProviderComparison(provider, item) {
     type: item.type,
     category: item.category,
     matchMode: item.matchMode,
+    dataMode: item.custom ? "live" : "demo",
+    refreshFailed: isProviderRefreshFailed(provider) || item.refreshStatus === "failed",
     finalPrice: chosen.finalPrice,
     membership: chosen.membership,
     coupon: chosen.coupon,
@@ -2087,6 +2089,8 @@ function renderBrowseControls(filteredItems) {
 
 function buildCatalogCard(item) {
   const best = item.providerComparisons[0];
+  const dataMode = getItemDataMode(item);
+  const refreshFailed = isItemRefreshFailed(item);
   const card = catalogCardTemplate.content.firstElementChild.cloneNode(true);
   card.classList.toggle("is-active", item.id === state.selectedId);
   setImageWithFallback(
@@ -2096,7 +2100,9 @@ function buildCatalogCard(item) {
     item.name
   );
   card.querySelector(".catalog-title").textContent = item.name;
-  card.querySelector(".catalog-type").textContent = item.type;
+  const typeBadge = card.querySelector(".catalog-type");
+  typeBadge.textContent = dataMode.label;
+  typeBadge.className = `offer-type catalog-type data-badge ${dataMode.className}`;
   card.querySelector(".catalog-subtitle").textContent = `${item.category} - ${item.matchMode}`;
   card.querySelector(".catalog-best").textContent = formatCurrency(best.finalPrice, best.billing);
   card.querySelector(".catalog-regular").textContent = `Regular ${formatCurrency(best.regularPrice, best.billing)}`;
@@ -2105,15 +2111,12 @@ function buildCatalogCard(item) {
   card.querySelector(".catalog-count").textContent = `${item.providerComparisons.length} providers`;
 
   const metaNode = card.querySelector(".catalog-meta");
-  [
-    item.custom ? "Live URL tracker" : "Demo data",
-    item.matchMode,
-    `Updated ${formatDate(best.lastChecked)}`
-  ].forEach((label) => {
-    const pill = document.createElement("span");
-    pill.className = "meta-pill";
-    pill.textContent = label;
-    metaNode.appendChild(pill);
+  metaNode.appendChild(buildDataBadge(item));
+  if (refreshFailed) {
+    metaNode.appendChild(buildRefreshFailedBadge());
+  }
+  [item.matchMode, `Updated ${formatDate(best.lastChecked)}`].forEach((label) => {
+    metaNode.appendChild(buildBadge(label));
   });
 
   const selectItem = () => {
@@ -2200,11 +2203,34 @@ function renderCatalog(filteredItems) {
   });
 }
 
-function buildBadge(text) {
+function isProviderRefreshFailed(provider) {
+  return /failed|source-error|price-missing|blocked|timeout|timed out|could not read/i.test(String(provider?.status || ""));
+}
+
+function isItemRefreshFailed(item) {
+  return item?.refreshStatus === "failed" || item?.providers?.some(isProviderRefreshFailed);
+}
+
+function getItemDataMode(item) {
+  return item?.custom
+    ? { label: "Live Tracker", className: "status-live" }
+    : { label: "Demo Data", className: "status-demo" };
+}
+
+function buildBadge(text, extraClass = "") {
   const badge = document.createElement("span");
-  badge.className = "meta-pill";
+  badge.className = ["meta-pill", extraClass].filter(Boolean).join(" ");
   badge.textContent = text;
   return badge;
+}
+
+function buildDataBadge(item) {
+  const dataMode = getItemDataMode(item);
+  return buildBadge(dataMode.label, `data-badge ${dataMode.className}`);
+}
+
+function buildRefreshFailedBadge() {
+  return buildBadge("Refresh Failed", "data-badge status-failed");
 }
 
 function renderSelectedItem(item) {
@@ -2228,8 +2254,11 @@ function renderSelectedItem(item) {
   selectedDescription.textContent = item.custom ? item.notes : `Demo-only scenario: ${item.notes}`;
   setImageWithFallback(selectedImage, selectedImageFallback, item.imageUrl, item.name);
   selectedBadges.innerHTML = "";
+  selectedBadges.appendChild(buildDataBadge(item));
+  if (isItemRefreshFailed(item)) {
+    selectedBadges.appendChild(buildRefreshFailedBadge());
+  }
   const badgeLabels = [
-    item.custom ? "Live URL tracker" : "Demo data",
     item.category,
     item.matchMode,
     `${item.providerComparisons.length} providers active`
@@ -2276,11 +2305,18 @@ function renderProviders(providers) {
   providers.forEach((provider, index) => {
     const card = providerCardTemplate.content.firstElementChild.cloneNode(true);
     const localMatch = getZipMatch(provider.name, getLocalKindForItem({ category: provider.category }));
+    const providerStatusNode = card.querySelector(".provider-status");
+    const providerDataBadgeClass = provider.refreshFailed
+      ? "status-failed"
+      : provider.dataMode === "live" ? "status-live" : "status-demo";
     card.querySelector(".provider-logo").textContent = getInitials(provider.name);
     card.querySelector(".provider-name").textContent = provider.name;
     card.querySelector(".provider-rank").textContent = `#${index + 1}`;
     card.querySelector(".provider-subtitle").textContent = `${provider.subtitle} - Updated ${formatDate(provider.lastChecked)}`;
-    card.querySelector(".provider-status").textContent = provider.status;
+    providerStatusNode.textContent = provider.refreshFailed
+      ? "Refresh Failed"
+      : provider.dataMode === "live" ? "Live Tracker" : "Demo Data";
+    providerStatusNode.className = `provider-status data-badge ${providerDataBadgeClass}`;
     card.querySelector(".provider-regular").textContent = formatCurrency(provider.regularPrice, provider.billing);
     card.querySelector(".provider-current").textContent = formatCurrency(provider.currentPrice, provider.billing);
     card.querySelector(".provider-final").textContent = formatCurrency(provider.finalPrice, provider.billing);
@@ -2288,6 +2324,7 @@ function renderProviders(providers) {
 
     const metaNode = card.querySelector(".provider-meta");
     const metaValues = [
+      `Source status ${provider.status}`,
       ...(provider.sourceUrl ? [`Source ${getHostname(provider.sourceUrl)}`] : []),
       ...(localMatch ? [`ZIP match - ${localMatch.areaLabel}`] : []),
       ...(provider.aprOffer ? [`Best APR ${provider.aprOffer.apr}% - ${provider.aprOffer.label}`] : []),
@@ -2477,6 +2514,8 @@ function renderWatchlist() {
       return;
     }
     const best = getVisibleProviderComparisons(item)[0];
+    const dataMode = getItemDataMode(item);
+    const refreshFailed = isItemRefreshFailed(item);
     const card = document.createElement("article");
     card.className = "watchlist-card";
     card.innerHTML = `
@@ -2489,7 +2528,8 @@ function renderWatchlist() {
       </div>
       <div class="watchlist-meta">
         <span class="meta-pill">${watch.email || "No email"}</span>
-        <span class="meta-pill">${item.custom ? "Live URL tracker" : "Local demo watch"}</span>
+        <span class="meta-pill data-badge ${dataMode.className}">${dataMode.label}</span>
+        ${refreshFailed ? `<span class="meta-pill data-badge status-failed">Refresh Failed</span>` : ""}
         ${watch.backendSyncedAt ? `<span class="meta-pill">Backend synced</span>` : ""}
       </div>
       <div class="watchlist-actions">

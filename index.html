@@ -184,6 +184,15 @@
               <p class="section-kicker">Data Honesty</p>
               <h2>What is live?</h2>
             </div>
+            <div class="data-legend" aria-label="Data source badge legend">
+              <span class="data-badge status-live">Live Tracker</span>
+              <span class="data-badge status-demo">Demo Data</span>
+              <span class="data-badge status-failed">Refresh Failed</span>
+            </div>
+            <p class="panel-text">
+              Demo data is included for exploration and UI testing. Live tracking works only for
+              public product URLs that expose readable price metadata.
+            </p>
             <ul class="status-list">
               <li>The URL extraction endpoint reads public HTML metadata from the pasted page.</li>
               <li>The saved tracker and target price are stored in Netlify Blobs.</li>
