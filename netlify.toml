@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "echo SmartSave static build complete"
   publish = "."
 
 [functions]
