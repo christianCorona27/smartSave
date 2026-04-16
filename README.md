@@ -1,67 +1,78 @@
 # SmartSave
 
-SmartSave is a focused price-tracking web app. The real workflow is intentionally narrow:
+SmartSave is a focused price-tracking web app for one real workflow: saving a public product URL, tracking its readable price over time, and emailing the user when the price reaches a target.
 
-1. A user pastes a public product URL.
-2. SmartSave extracts title, price, image, source, and metadata from the page when available.
-3. The user confirms the price, enters a target price, and adds an email address.
+The app also includes seeded demo data so the interface can be explored without creating a live tracker. Demo data is clearly labeled and should not be interpreted as live retailer, lender, dealership, coupon, or service-provider coverage.
+
+## Core Workflow
+
+1. Paste a public product URL.
+2. SmartSave reads the page server-side and extracts available metadata such as title, price, image, hostname, currency, and confidence level.
+3. The user reviews the extracted result, confirms the price, enters a target price, and provides an email address.
 4. The backend stores the tracker in Netlify Blobs.
-5. A scheduled Netlify Function re-fetches the public page.
-6. SmartSave sends an email alert through Resend when the latest readable price meets the target.
+5. A scheduled Netlify Function re-fetches the saved URL.
+6. SmartSave updates the current price, appends price history, and sends an email alert when the readable price is at or below the target.
 
-Seeded product, service, vehicle, and APR examples are still included so the interface is easy to browse, but they are clearly labeled as demo-only data.
+This is the production-oriented part of the project.
 
-## Live Demo
+## Live vs Demo
 
-- Netlify app: [SmartSave on Netlify](https://smartsave-compare.netlify.app/)
-- GitHub Pages static fallback: [SmartSave](https://christiancorona27.github.io/smartSave/)
-- Repository: [christianCorona27/smartSave](https://github.com/christianCorona27/smartSave)
+### Live Features
 
-Use the Netlify app for backend routes. GitHub Pages can show the static UI, but it cannot run URL extraction, tracker storage, scheduled checks, or email alerts.
+These features use backend logic and real stored tracker records:
 
-## What Is Real
+- Public URL metadata extraction through `GET /api/link-preview`.
+- Tracker creation through `POST /api/track-url`.
+- Tracker storage with Netlify Blobs.
+- Scheduled URL refresh through `netlify/functions/price-alert-sweep.mts`.
+- Price history updates for saved live trackers.
+- Email alerts through Resend when configured.
+- Confidence labels for extracted prices:
+  - High confidence: structured product metadata was found.
+  - Medium confidence: a price candidate was found, but the user should confirm it.
+  - Low confidence: manual confirmation is required.
 
-- `GET /api/link-preview?url=...` reads a public product page and extracts reusable metadata.
-- `POST /api/track-url` validates the URL, email, and target price, re-checks the page, and stores the tracker.
-- `price-alert-sweep` runs hourly on Netlify published deploys and re-fetches stored tracker URLs.
-- Netlify Blobs stores tracker records and compact price history.
-- Resend sends email alerts when the latest readable price is at or below the target.
+### Demo Features
 
-## Demo-Only Data
+These are included for browsing, presentation, and UI testing only:
 
-The browseable catalog is seeded so judges and testers can explore the UI without needing to paste URLs first. These examples are not live data:
+- Seeded product and service comparison cards.
+- Demo retailer/provider names.
+- Demo student, senior, service-member, and coupon assumptions.
+- Demo vehicle/dealership and home APR examples.
+- Demo ZIP-based local matching.
+- Demo bulk/reorder planning helpers.
+- Seeded historical price charts.
 
-- Retailer comparisons
-- Service-provider comparisons
-- Student, senior, service-member, and coupon assumptions
-- Vehicle and dealership examples
-- Home APR examples
-- ZIP-based local matching
-- Bulk and reorder helpers
-- Seeded price-history charts
+Demo examples are not connected to live retailer APIs, lender APIs, dealership inventory, coupon systems, or real-time provider feeds.
 
-These are useful UI demonstrations, not claims of real retailer, lender, dealership, or coupon integrations.
+## What SmartSave Does Not Claim
+
+SmartSave does not provide full real-time coverage across Amazon, Walmart, Target, Best Buy, dealerships, lenders, or service providers. Many sites block automated reads, hide prices behind JavaScript, require location selection, require account login, or change prices at checkout.
+
+SmartSave reads public product-page metadata when available. If a page cannot be read reliably, the app surfaces that limitation instead of pretending live data exists.
 
 ## Current Features
 
-- Public product URL input
-- Safe server-side URL validation that blocks private/local hosts
-- Title, price, image, description, hostname, currency, and confidence extraction
-- User-confirmed title and current price before saving
-- Target price and email capture
-- Backend tracker storage with Netlify Blobs
-- Hourly scheduled price refresh
-- Email alert when the target is met
-- Local saved-watch display in the browser
-- Demo catalog search, filters, category dropdowns, and price-history visualization
-- Clear labels separating live URL trackers from demo-only examples
-- Mobile-responsive blue-black UI with product imagery and source badges
+- Public product URL input.
+- Server-side URL validation for public pages.
+- Title, price, image, description, hostname, currency, and confidence extraction.
+- User confirmation before saving a tracker.
+- Target price and email capture.
+- Netlify Blobs tracker storage.
+- Scheduled price refresh.
+- Email alert when target price is met.
+- Compact price history visualization.
+- Recent tracked price points.
+- Clear `Live Tracker`, `Demo Data`, and `Refresh Failed` badges.
+- Personalized savings display for demo comparisons.
+- Mobile-friendly dark navy UI.
 
 ## API Routes
 
 ### `GET /api/link-preview`
 
-Reads public HTML metadata from a product page.
+Reads public product-page metadata.
 
 Example:
 
@@ -69,22 +80,24 @@ Example:
 /api/link-preview?url=https%3A%2F%2Fexample.com%2Fproduct
 ```
 
-Returns:
+Typical response fields:
 
+- `ok`
+- `url`
+- `hostname`
 - `title`
 - `description`
 - `price`
 - `currency`
 - `image`
-- `hostname`
 - `confidence`
 - `message`
 
 ### `POST /api/track-url`
 
-Stores a live price tracker.
+Creates a saved live tracker.
 
-Expected JSON:
+Example payload:
 
 ```json
 {
@@ -96,69 +109,99 @@ Expected JSON:
 }
 ```
 
-The backend re-fetches the URL before storing the tracker. If the page does not expose a reusable price, the API returns a clear error instead of creating a fake live tracker.
+The backend re-fetches the URL before storing the tracker. If the page does not expose a readable price, the API returns an error rather than creating a fake live tracker.
 
-### Scheduled Function
+### `GET /api/track-url`
 
-`netlify/functions/price-alert-sweep.mts` runs hourly on Netlify published deploys. It reads stored trackers, re-fetches each public URL, updates compact price history, and sends an email when the target is met.
+Reads a stored tracker when given a tracker id and matching email. This lets the frontend refresh live tracker price history after scheduled backend checks.
+
+Example:
+
+```text
+/api/track-url?id=tracker%2Fabc123&email=you%40example.com
+```
+
+## Scheduled Refresh
+
+`netlify/functions/price-alert-sweep.mts` runs hourly on published Netlify deploys. It:
+
+- Loads stored trackers from Netlify Blobs.
+- Re-fetches each saved public URL.
+- Updates title, image, current price, confidence, and status when available.
+- Appends to `priceHistory`.
+- Records refresh failures without stopping the full sweep.
+- Sends an email alert when `currentPrice <= targetPrice` and the user has not already been alerted for that price.
 
 ## Environment Variables
 
-Set these in Netlify for email alerts:
+Email alerts require these Netlify environment variables:
 
 ```text
 RESEND_API_KEY=your_resend_api_key
 ALERT_FROM_EMAIL=alerts@example.com
 ```
 
-Without these values, trackers can be stored, but email delivery will not be sent.
+Without these values, trackers can still be stored and refreshed, but email delivery will not be sent.
 
 ## Run Locally
 
-Static-only preview:
+Install dependencies:
+
+```powershell
+npm install
+```
+
+Run a static-only preview:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-website.ps1
 ```
 
-Then open `http://localhost:5173/`.
-
-Backend-enabled local development:
+Run with Netlify Functions locally:
 
 ```powershell
-npm install
 npm run dev
 ```
 
-Use the Netlify dev URL for `/api/link-preview` and `/api/track-url`.
+Use the Netlify dev URL when testing `/api/link-preview` and `/api/track-url`.
 
-## Files
+## Build
 
-- `index.html` - focused URL tracker UI, demo catalog layout, templates, and accessibility structure
-- `styles.css` - blue-black visual identity, responsive layout, tracker panels, catalog cards, and mobile behavior
-- `script.js` - frontend state, URL extraction flow, target capture, demo catalog behavior, and backend tracker sync
-- `netlify/functions/link-preview.mts` - public URL metadata extraction endpoint
-- `netlify/functions/track-url.mts` - tracker creation endpoint
-- `netlify/functions/price-alert-sweep.mts` - hourly scheduled refresh and alert processor
-- `netlify/functions/lib/page-reader.mts` - shared public-page reader and metadata parser
-- `netlify/functions/lib/alerts.mts` - tracker storage, email validation, and Resend delivery helpers
-- `netlify/functions/local-match.mts` - demo-only ZIP matching endpoint
-- `netlify/functions/lib/provider-directory.mts` - demo-only local provider directory
-- `netlify.toml` - Netlify Functions configuration
-- `.env.example` - required email environment variables
+```powershell
+npm run build
+```
+
+The build writes static files to `dist/`. Netlify is configured to publish `dist` and bundle functions from `netlify/functions`.
+
+## Project Structure
+
+- `index.html` - application layout, live tracker entry point, demo catalog, and templates.
+- `styles.css` - dark navy visual system, responsive layout, cards, badges, and chart styling.
+- `script.js` - frontend state, live tracker flow, demo catalog behavior, price history rendering, and backend sync.
+- `scripts/build.mjs` - static build script that writes the publishable app to `dist/`.
+- `netlify/functions/link-preview.mts` - public URL metadata preview endpoint.
+- `netlify/functions/track-url.mts` - tracker create/read endpoint.
+- `netlify/functions/price-alert-sweep.mts` - scheduled tracker refresh and alert processor.
+- `netlify/functions/lib/page-reader.mts` - shared public-page fetch and metadata parsing logic.
+- `netlify/functions/lib/alerts.mts` - tracker storage, validation, and Resend email helpers.
+- `netlify/functions/local-match.mts` - demo-only ZIP matching endpoint.
+- `netlify/functions/lib/provider-directory.mts` - demo-only provider directory.
+- `netlify.toml` - Netlify build and functions configuration.
+- `.env.example` - example email environment variables.
 
 ## Limitations
 
-- Some major retailers block automated reads or render prices only after JavaScript, login, location selection, or cart state.
-- SmartSave reads public metadata only; it does not bypass paywalls, private pages, bot protection, carts, or account-only pricing.
-- Email alerts depend on Netlify scheduled functions and configured Resend credentials.
-- Demo catalog prices and histories are seeded examples, not live market data.
-- The app does not purchase products, apply coupons, reserve inventory, or guarantee checkout price.
+- Public-page extraction depends on what the source site exposes in HTML metadata.
+- JavaScript-rendered prices, account-only prices, cart prices, location-specific prices, and bot-protected pages may not be readable.
+- SmartSave does not bypass authentication, anti-bot controls, paywalls, private networks, or checkout flows.
+- Email delivery requires configured Resend credentials.
+- Demo prices, discounts, APRs, and provider matches are seeded examples.
+- The app does not purchase products, reserve inventory, apply coupons at checkout, or guarantee final checkout price.
 
 ## Future Features
 
-- User accounts so trackers sync across devices.
-- Official retailer API adapters for a small set of supported stores.
-- Tracker detail pages with backend price-history charts.
-- Optional SMS alerts after email alerts are stable.
-- Browser extension or bookmarklet for saving product pages faster.
+- Retailer API integrations for a small number of officially supported stores.
+- Browser extension for saving product pages directly while shopping.
+- Expanded provider network with clear source labels and integration status.
+- Smarter deal scoring that weighs price confidence, shipping, eligibility, fees, and history.
+- Multi-item optimization for comparing carts, bundles, and recurring purchases.
