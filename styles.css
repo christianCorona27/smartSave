@@ -653,6 +653,11 @@ h4 {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 }
 
+.demo-explorer .detail-shell {
+  width: calc(100% + 416px);
+  margin-left: -416px;
+}
+
 .demo-explorer > .demo-explainer,
 .demo-reset-button {
   margin-top: 0.8rem;
@@ -1696,6 +1701,11 @@ textarea:focus-visible,
   .workspace > .results-area {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .demo-explorer .detail-shell {
+    width: auto;
+    margin-left: 0;
   }
 
   .provider-grid,
