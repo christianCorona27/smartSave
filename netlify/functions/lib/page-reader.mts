@@ -125,6 +125,49 @@ function findJsonLdPrices(html: string) {
   return null;
 }
 
+function findEmbeddedRetailPrice(html: string) {
+  const patterns = [
+    /\\?"price\\?"\s*:\s*\{[^}]{0,500}\\?"current_retail\\?"\s*:\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i,
+    /\\?"current_retail\\?"\s*:\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i,
+    /\\?"formatted_current_price\\?"\s*:\s*\\?"\$([0-9][0-9,]*(?:\.[0-9]{2})?)/i,
+    /current price is (?:USD)?\$?([0-9][0-9,]*(?:\.[0-9]{2})?)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const price = parsePrice(match?.[1]);
+    if (price) {
+      return price;
+    }
+  }
+  return null;
+}
+
+function findLoosePrice(html: string) {
+  const matches = [...html.matchAll(/\$\s?([0-9][0-9,]*(?:\.[0-9]{2})?)/g)].slice(0, 80);
+  const skipContext = /free|shipping|ship|orders?|returns?|reimbursement|warranty|credit|financing|minimum|over\s+\$|orders?\s+over|gift|reward|cashback/i;
+  const preferContext = /current price|sale|now|selected|add current price|price when purchased|buy|cart|reg\s+\$/i;
+
+  const fallback: number[] = [];
+  for (const match of matches) {
+    const price = parsePrice(match[1]);
+    if (!price) {
+      continue;
+    }
+    const start = Math.max(0, match.index - 100);
+    const end = Math.min(html.length, match.index + 140);
+    const context = cleanText(html.slice(start, end));
+    if (skipContext.test(context)) {
+      continue;
+    }
+    if (preferContext.test(context)) {
+      return price;
+    }
+    fallback.push(price);
+  }
+  return fallback[0] || null;
+}
+
 async function readLimitedText(response: Response) {
   const reader = response.body?.getReader();
   if (!reader) {
@@ -205,11 +248,9 @@ export async function readPublicProductPage(rawUrl: string): Promise<ProductPage
       /<meta[^>]+itemprop=["']price["'][^>]+content=["']([^"']+)["'][^>]*>/i,
       /<meta[^>]+name=["']price["'][^>]+content=["']([^"']+)["'][^>]*>/i
     ]));
-    const loosePrice = parsePrice(firstMatch(html, [
-      /(?:sale|current|price)[^$]{0,80}\$\s?([0-9][0-9,]*(?:\.[0-9]{2})?)/i,
-      /\$\s?([0-9][0-9,]*(?:\.[0-9]{2})?)/
-    ]));
-    const price = jsonLd?.price || metaPrice || loosePrice;
+    const embeddedPrice = findEmbeddedRetailPrice(html);
+    const loosePrice = findLoosePrice(html);
+    const price = jsonLd?.price || metaPrice || embeddedPrice || loosePrice;
     const image = jsonLd?.image || firstMatch(html, [
       /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
       /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i

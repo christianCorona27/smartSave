@@ -1191,6 +1191,10 @@ const heroPreviewTitle = document.querySelector("#heroPreviewTitle");
 const heroPreviewMeta = document.querySelector("#heroPreviewMeta");
 const heroPreviewPrice = document.querySelector("#heroPreviewPrice");
 const heroValueInsight = document.querySelector("#heroValueInsight");
+const aiDealPanel = document.querySelector("#aiDealPanel");
+const aiDealInsightText = document.querySelector("#aiDealInsightText");
+const couponSuggestionList = document.querySelector("#couponSuggestionList");
+const shoppingLinkList = document.querySelector("#shoppingLinkList");
 const heroConfidenceBadge = document.querySelector("#heroConfidenceBadge");
 const heroTargetPriceInput = document.querySelector("#heroTargetPriceInput");
 const heroTargetDelta = document.querySelector("#heroTargetDelta");
@@ -1627,6 +1631,125 @@ function getPriceInsight(currentPrice, priceHistory = [], confidence = "low") {
   };
 }
 
+function buildSearchUrl(query) {
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function buildShoppingUrl(query) {
+  return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
+}
+
+function getRetailerLabel(hostname = "") {
+  const host = String(hostname || "").replace(/^www\./, "");
+  const label = host.split(".")[0] || host || "retailer";
+  return label
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ") || "retailer";
+}
+
+function getShortProductTitle(title = "") {
+  return cleanManualText(title, "this product").split(/[|–—-]/)[0].trim() || "this product";
+}
+
+function renderSearchChips(container, entries) {
+  container.innerHTML = "";
+  entries.forEach((entry) => {
+    const link = document.createElement("a");
+    link.className = "search-suggestion-chip";
+    link.href = entry.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = entry.label;
+    container.appendChild(link);
+  });
+}
+
+function fallbackDealInsight(preview, targetPrice = null) {
+  const target = Number(targetPrice);
+  if (Number.isFinite(target) && target > 0) {
+    return `Your target of ${formatCurrency(target)} is saved as the number to watch for this item.`;
+  }
+  return "Price detected. Set a target and SmartSave will watch for a better time to buy.";
+}
+
+function renderFallbackDealTools(preview) {
+  if (!preview) {
+    aiDealPanel.hidden = true;
+    return;
+  }
+  const title = getShortProductTitle(preview.title);
+  const retailer = getRetailerLabel(preview.hostname);
+  aiDealPanel.hidden = false;
+  aiDealInsightText.textContent = fallbackDealInsight(preview, parseMoneyInput(heroTargetPriceInput.value));
+  renderSearchChips(couponSuggestionList, [
+    `${title} promo code`,
+    `${retailer} coupon 2026`,
+    `${title} sale ${retailer}`
+  ].map((query) => ({
+    label: query,
+    href: buildSearchUrl(query)
+  })));
+  renderSearchChips(shoppingLinkList, [
+    { label: "Google Shopping", href: buildShoppingUrl(title) },
+    { label: `Search ${retailer}`, href: buildSearchUrl(`${title} ${retailer}`) },
+    { label: "Open source page", href: preview.url }
+  ]);
+}
+
+async function loadAiDealInsight(preview) {
+  if (!preview?.title || !preview?.hostname || !preview?.price || !hasBackendRuntime()) {
+    renderFallbackDealTools(preview);
+    return;
+  }
+
+  aiDealPanel.hidden = false;
+  aiDealInsightText.textContent = "Generating deal insight...";
+  couponSuggestionList.innerHTML = "";
+  shoppingLinkList.innerHTML = "";
+
+  try {
+    const response = await fetch("/api/deal-insight", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: preview.title,
+        hostname: preview.hostname,
+        price: preview.price,
+        targetPrice: parseMoneyInput(heroTargetPriceInput.value)
+      })
+    });
+    const payload = await readJsonSafe(response);
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || "Unable to generate deal insight.");
+    }
+
+    aiDealInsightText.textContent = payload.insight || fallbackDealInsight(preview, parseMoneyInput(heroTargetPriceInput.value));
+    const couponQueries = Array.isArray(payload.couponQueries) && payload.couponQueries.length
+      ? payload.couponQueries
+      : [
+          `${getShortProductTitle(preview.title)} promo code`,
+          `${getRetailerLabel(preview.hostname)} coupon 2026`
+        ];
+    renderSearchChips(couponSuggestionList, couponQueries.slice(0, 3).map((query) => ({
+      label: `Try: ${query}`,
+      href: buildSearchUrl(query)
+    })));
+    const shortTitle = getShortProductTitle(preview.title);
+    const retailer = getRetailerLabel(preview.hostname);
+    renderSearchChips(shoppingLinkList, [
+      { label: "Google Shopping", href: buildShoppingUrl(shortTitle) },
+      { label: `Search ${retailer}`, href: buildSearchUrl(`${shortTitle} ${retailer}`) },
+      { label: "Open source page", href: preview.url }
+    ]);
+  } catch {
+    renderFallbackDealTools(preview);
+  }
+}
+
 function updateTrackerDeltaText() {
   const previewPrice = Number(state.customPreview?.price);
   const heroTarget = parseMoneyInput(heroTargetPriceInput.value);
@@ -1654,6 +1777,7 @@ function renderHeroPreview(preview) {
   setImageWithFallback(heroPreviewImage, heroPreviewFallback, preview.image, preview.title || preview.hostname || "SmartSave");
 
   updateTrackerDeltaText();
+  void loadAiDealInsight(preview);
 }
 
 async function readHeroUrl() {
@@ -1668,6 +1792,7 @@ async function readHeroUrl() {
   }
 
   customUrlInput.value = url;
+  aiDealPanel.hidden = true;
   setHeroPreviewStatus("Reading product page…");
   heroFindPriceBtn.disabled = true;
   heroFindPriceBtn.setAttribute("aria-busy", "true");

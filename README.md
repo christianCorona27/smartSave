@@ -27,6 +27,8 @@ This is the working product path. The app does not claim broad real-time retaile
 - Tracker storage with Netlify Blobs.
 - Scheduled backend refresh through `netlify/functions/price-alert-sweep.mts`.
 - Compact price history for saved trackers.
+- Optional OpenAI-powered deal insight for parsed products when `OPENAI_API_KEY` is configured.
+- Coupon and shopping search suggestions generated from the detected title and source.
 - Email alert delivery through Resend when environment variables are configured.
 - Clear status badges for `Live Tracker`, `Demo Data`, and `Refresh Failed`.
 
@@ -51,7 +53,7 @@ SmartSave reads public product-page metadata only. It does not bypass login scre
 
 If a page does not expose a readable price, SmartSave shows a low-confidence or failed result instead of inventing a price.
 
-Price insight is intentionally simple. It compares the readable page price to the user's target and confidence level; it does not claim full market intelligence.
+Price insight is intentionally simple. It uses the detected price, confidence level, and available history only; it does not claim full market intelligence.
 
 ## API Routes
 
@@ -100,6 +102,10 @@ The endpoint re-fetches the URL before storing the tracker. If the page does not
 
 Reads a stored tracker when provided a tracker id and matching email. The frontend uses this to refresh stored price history after scheduled checks.
 
+### `POST /api/deal-insight`
+
+Generates one short product insight and coupon search suggestions from the detected title, source, price, and target. It uses the OpenAI API when `OPENAI_API_KEY` is configured and falls back to deterministic search suggestions when it is not.
+
 ## Scheduled Refresh
 
 `netlify/functions/price-alert-sweep.mts` runs hourly on published Netlify deploys. It loads stored trackers, re-fetches each saved public URL, updates current price and price history, records refresh failures safely, and sends an email alert when the target is met.
@@ -114,6 +120,15 @@ ALERT_FROM_EMAIL=alerts@example.com
 ```
 
 Without these values, trackers can still be stored and refreshed, but email delivery will not be sent.
+
+OpenAI deal insights require:
+
+```text
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+Without `OPENAI_API_KEY`, SmartSave still shows deterministic fallback insight and search links.
 
 ## Local Development
 
@@ -153,6 +168,7 @@ The build writes static files to `dist/`. Netlify publishes `dist` and bundles f
 - `scripts/build.mjs` - static build script.
 - `netlify/functions/link-preview.mts` - public URL preview endpoint.
 - `netlify/functions/track-url.mts` - tracker create/read endpoint.
+- `netlify/functions/deal-insight.mts` - optional OpenAI insight and coupon search suggestion endpoint.
 - `netlify/functions/price-alert-sweep.mts` - scheduled refresh and alert processor.
 - `netlify/functions/lib/page-reader.mts` - public-page fetch and metadata parsing logic.
 - `netlify/functions/lib/alerts.mts` - tracker storage, validation, and email helper logic.
