@@ -4,6 +4,17 @@ SmartSave helps shoppers avoid overpaying by turning a public product page into 
 
 The product is intentionally narrow. Demo datasets are included for browsing and presentation, but they are secondary and clearly labeled as demo-only.
 
+## Links
+
+- Live website: https://smartsave-compare.netlify.app
+- Website and app README: https://github.com/christianCorona27/smartSave#readme
+
+## Preview
+
+![SmartSave desktop preview](preview/desktop.png)
+
+![SmartSave mobile preview](preview/mobile.png)
+
 ## Core Live Workflow
 
 1. Paste a public product URL.
