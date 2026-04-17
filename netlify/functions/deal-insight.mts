@@ -67,7 +67,7 @@ async function buildOpenAiInsight(payload: Required<Pick<DealInsightPayload, "ti
     return null;
   }
 
-  const model = Netlify.env.get("OPENAI_MODEL") || "gpt-4.1-mini";
+  const model = Netlify.env.get("OPENAI_MODEL") || "gpt-4o-mini";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -105,23 +105,7 @@ async function buildOpenAiInsight(payload: Required<Pick<DealInsightPayload, "ti
         }
       ],
       text: {
-        format: {
-          type: "json_schema",
-          name: "smartsave_deal_insight",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              insight: { type: "string" },
-              couponQueries: {
-                type: "array",
-                items: { type: "string" }
-              }
-            },
-            required: ["insight", "couponQueries"]
-          }
-        }
+        format: { type: "json_object" }
       }
     })
   });
