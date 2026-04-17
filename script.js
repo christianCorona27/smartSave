@@ -1359,7 +1359,7 @@ function getConfidenceMeta(confidence = "low") {
   const meta = {
     high: {
       label: "High confidence",
-      detail: "Green check: price came from structured product metadata.",
+      detail: "Green check: price came from the product page.",
       className: "confidence-high",
       shortLabel: "High confidence - check"
     },
@@ -1540,13 +1540,13 @@ function setHeroPreviewStatus(message, isError = false) {
 function getTargetDeltaInfo(currentPrice, targetPrice) {
   if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
     return {
-      message: "No readable price yet. Confirm the page result before creating a tracker.",
+      message: "No readable price yet.",
       state: "neutral"
     };
   }
   if (!Number.isFinite(targetPrice) || targetPrice <= 0) {
     return {
-      message: "Set a target below the detected price to get a drop alert.",
+      message: "Set a target to track changes.",
       state: "neutral"
     };
   }
@@ -1554,18 +1554,12 @@ function getTargetDeltaInfo(currentPrice, targetPrice) {
   const difference = currentPrice - targetPrice;
   if (difference > 0) {
     return {
-      message: `Target is ${formatCurrency(difference)} below the detected price. SmartSave alerts when the page reaches it.`,
+      message: `${formatCurrency(difference)} away from your target`,
       state: difference <= currentPrice * 0.1 ? "near" : "above"
     };
   }
-  if (difference === 0) {
-    return {
-      message: "Target matches the detected price. Saving can trigger an immediate alert attempt.",
-      state: "met"
-    };
-  }
   return {
-    message: `Target is ${formatCurrency(Math.abs(difference))} above the detected price. This may alert immediately after saving.`,
+    message: "Target reached — alert conditions met",
     state: "met"
   };
 }
@@ -1577,7 +1571,14 @@ function applyTargetDeltaNode(node, currentPrice, targetPrice) {
   node.classList.add(`is-${info.state}`);
 }
 
-function getPriceInsight(currentPrice, targetPrice, confidence = "low") {
+function getPriceInsight(currentPrice, priceHistory = [], confidence = "low") {
+  if (confidence === "low") {
+    return {
+      state: "unknown",
+      message: "Not enough reliable data to rate this price yet."
+    };
+  }
+
   if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
     return {
       state: "unknown",
@@ -1585,38 +1586,44 @@ function getPriceInsight(currentPrice, targetPrice, confidence = "low") {
     };
   }
 
-  if (!Number.isFinite(targetPrice) || targetPrice <= 0) {
+  const historyValues = priceHistory
+    .map((point) => Number(typeof point === "number" ? point : point?.price))
+    .filter((price) => Number.isFinite(price) && price > 0);
+
+  if (!historyValues.length) {
     return {
       state: "unknown",
-      message: confidence === "low"
-        ? "Insight unavailable: confirm the detected number before saving."
-        : "Insight unavailable: add a target to compare this price against."
+      message: "Price detected. Set a target to track changes."
     };
   }
 
-  if (currentPrice <= targetPrice) {
+  const lowest = Math.min(...historyValues);
+  const average = historyValues.reduce((sum, price) => sum + price, 0) / historyValues.length;
+
+  if (currentPrice <= lowest) {
     return {
       state: "good",
-      message: "Good deal: the detected price already meets your target."
+      message: "Good deal — near lowest observed price."
     };
   }
 
-  const gapRatio = (currentPrice - targetPrice) / currentPrice;
-  if (gapRatio <= 0.12) {
-    return {
-      state: "average",
-      message: "Average: close to your target, but not worth an alert yet."
-    };
-  }
-  if (gapRatio >= 0.22) {
+  if (currentPrice >= average * 1.15) {
     return {
       state: "high",
-      message: "High: this is still well above your target. Waiting is reasonable."
+      message: "High price — consider waiting before buying."
     };
   }
+
+  if (Math.abs(currentPrice - average) / average <= 0.1) {
+    return {
+      state: "average",
+      message: "Average price — typical range."
+    };
+  }
+
   return {
-    state: "average",
-    message: "Average: track it and wait for a clearer drop."
+    state: "unknown",
+    message: "Price detected. Set a target to track changes."
   };
 }
 
@@ -1629,7 +1636,8 @@ function updateTrackerDeltaText() {
   applyTargetDeltaNode(heroTargetDelta, previewPrice, heroTarget);
   applyTargetDeltaNode(customTargetDelta, customPrice, customTarget);
   if (heroValueInsight) {
-    const insight = getPriceInsight(previewPrice, heroTarget, state.customPreview?.confidence);
+    const previewHistory = state.customPreview?.priceHistory || state.customPreview?.history || [];
+    const insight = getPriceInsight(previewPrice, previewHistory, state.customPreview?.confidence);
     heroValueInsight.textContent = insight.message;
     heroValueInsight.classList.remove("is-good", "is-average", "is-high", "is-unknown");
     heroValueInsight.classList.add(`is-${insight.state}`);
@@ -1645,9 +1653,6 @@ function renderHeroPreview(preview) {
   applyConfidenceBadge(heroConfidenceBadge, preview.confidence);
   setImageWithFallback(heroPreviewImage, heroPreviewFallback, preview.image, preview.title || preview.hostname || "SmartSave");
 
-  if (preview.price && !heroTargetPriceInput.value.trim()) {
-    heroTargetPriceInput.value = Math.max(1, preview.price * 0.85).toFixed(2);
-  }
   updateTrackerDeltaText();
 }
 
@@ -1658,12 +1663,12 @@ async function readHeroUrl() {
     return null;
   }
   if (!hasBackendRuntime()) {
-    setHeroPreviewStatus("URL reading needs the Netlify backend. Use the deployed site or Netlify dev.", true);
+    setHeroPreviewStatus("Use the deployed SmartSave site to read URLs.", true);
     return null;
   }
 
   customUrlInput.value = url;
-  setHeroPreviewStatus("Reading public product page metadata…");
+  setHeroPreviewStatus("Reading product page…");
   heroFindPriceBtn.disabled = true;
   heroFindPriceBtn.setAttribute("aria-busy", "true");
 
@@ -1675,10 +1680,10 @@ async function readHeroUrl() {
     }
     applyPreviewToCustomForm(payload, true);
     renderHeroPreview(payload);
-    setHeroPreviewStatus(payload.message || "Readable product details found. Confirm the price, then set a target and email.");
+    setHeroPreviewStatus(payload.message || "Price found. Set a target and email to track it.");
     return payload;
   } catch (error) {
-    setHeroPreviewStatus(error.message || "Unable to read that URL. Try another public product page.", true);
+    setHeroPreviewStatus(error.message || "Could not read that URL. Try another public product page.", true);
     return null;
   } finally {
     heroFindPriceBtn.disabled = false;
@@ -1717,11 +1722,11 @@ async function createHeroTracker() {
   heroCreateTrackerBtn.removeAttribute("aria-busy");
 
   if (saved) {
-    setHeroPreviewStatus("Tracker saved. Scheduled backend checks will refresh the price and email when the target is reached.");
+    setHeroPreviewStatus("Tracker saved. SmartSave will check for your target price.");
     heroTargetPriceInput.value = "";
     heroEmailInput.value = "";
     updateTrackerDeltaText();
-    heroValueInsight.textContent = "Saved tracker: price history updates after backend refreshes.";
+    heroValueInsight.textContent = "Tracker saved. Price history updates after future checks.";
   }
 }
 
@@ -1733,11 +1738,11 @@ async function readCustomUrl() {
     return;
   }
   if (!hasBackendRuntime()) {
-    customSourceStatus.textContent = "URL reading needs the Netlify backend. Run with Netlify dev or use the deployed site.";
+    customSourceStatus.textContent = "Use the deployed SmartSave site to read URLs.";
     return;
   }
 
-  customSourceStatus.textContent = "Reading public product page metadata…";
+  customSourceStatus.textContent = "Reading product page…";
   try {
     const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
     const payload = await readJsonSafe(response);
@@ -1745,7 +1750,7 @@ async function readCustomUrl() {
       throw new Error(payload.error || "SmartSave could not read that URL.");
     }
     applyPreviewToCustomForm(payload);
-    customSourceStatus.textContent = `${payload.message || "Metadata loaded. Confirm the price, set a target, and save the tracker."} ${getConfidenceMeta(payload.confidence).detail}`;
+    customSourceStatus.textContent = `${payload.message || "Page details loaded. Confirm the price, set a target, and save the tracker."} ${getConfidenceMeta(payload.confidence).detail}`;
   } catch (error) {
     customSourceStatus.textContent = error.message || "Unable to read that URL. Try another public product page.";
   }
@@ -1793,7 +1798,7 @@ function buildCustomTracker() {
     type,
     category,
     matchMode: "Live URL tracker",
-    notes: `Live tracker from ${providerName}. SmartSave stores the URL and target price, then the backend re-checks the public page on the scheduled sweep.`,
+    notes: `Live tracker from ${providerName}. SmartSave saves the URL and target price, then checks the public page again later.`,
     keywords: [name, category, providerName, type, "custom", "live", "url", "tracker"].filter(Boolean),
     custom: true,
     sourceUrl: url,
@@ -1870,11 +1875,11 @@ async function addCustomTracker() {
     };
     saveTrackedCatalog(state.items);
     saveWatches();
-    let backendMessage = "Saved locally. Backend sync did not run.";
+    let backendMessage = "Saved locally. Live email tracking did not start.";
     try {
       backendMessage = await syncWatchWithBackend(tracker, best, state.watches[tracker.id]);
     } catch (syncError) {
-      backendMessage = syncError.message || "Backend sync failed, but the tracker is saved locally.";
+      backendMessage = syncError.message || "Live email tracking failed, but the tracker is saved locally.";
     }
     clearCustomTrackerForm();
     targetPriceInput.value = "";
@@ -1893,15 +1898,15 @@ async function syncWatchWithBackend(item, best, watch) {
   const sourceUrl = best.sourceUrl || item.sourceUrl;
 
   if (!sourceUrl) {
-    return "Demo catalog watches stay local. Backend email alerts require a pasted public product URL.";
+    return "Demo catalog watches stay local. Email alerts require a pasted public product URL.";
   }
 
   if (!watch.email) {
-    return "Saved locally. Add an email address to sync this URL tracker to the backend.";
+    return "Saved locally. Add an email address to turn on alerts.";
   }
 
   if (!hasBackendRuntime()) {
-    return "Saved locally. Backend email alerts become active when this build runs through Netlify or Netlify dev.";
+    return "Saved locally. Email alerts work on the deployed SmartSave site.";
   }
 
   const response = await fetch("/api/track-url", {
@@ -1920,7 +1925,7 @@ async function syncWatchWithBackend(item, best, watch) {
 
   const payload = await readJsonSafe(response);
   if (!response.ok) {
-    throw new Error(payload.error || "Unable to save the backend alert right now.");
+    throw new Error(payload.error || "Unable to save the alert right now.");
   }
 
   if (payload.tracker) {
@@ -1937,9 +1942,9 @@ async function syncWatchWithBackend(item, best, watch) {
   renderWatchlist();
 
   const emailNotice = payload.emailConfigured === false
-    ? " Email delivery still needs RESEND_API_KEY and ALERT_FROM_EMAIL in Netlify."
+    ? " Email delivery is not configured on this site yet."
     : "";
-  return `${payload.message || "Backend URL tracker saved."}${emailNotice}`;
+  return `${payload.message || "URL tracker saved."}${emailNotice}`;
 }
 
 async function refreshSyncedTrackerHistories() {
@@ -2780,7 +2785,7 @@ function renderBeforeAfterPanel(card, provider) {
 function renderSelectedItem(item) {
   if (!item) {
     selectedTitle.textContent = "Select a live tracker or demo item";
-    selectedDescription.textContent = "Saved URL trackers show real page metadata. Demo items show seeded comparison behavior only.";
+    selectedDescription.textContent = "Saved URL trackers show page details. Demo items show seeded examples only.";
     selectedBadges.innerHTML = "";
     providerGrid.innerHTML = '<div class="empty-state">Source details appear here after you select a live tracker or demo item.</div>';
     plannerGrid.innerHTML = '<div class="empty-state">Demo planning tips appear here only for seeded examples that include them.</div>';
@@ -3214,17 +3219,17 @@ function getWatchSyncSummary(item, watch) {
       .find((requirement) => /^Last refresh failed:/i.test(requirement));
     const reason = failedRequirement
       ? failedRequirement.replace(/^Last refresh failed:\s*/i, "")
-      : "The source may be blocked, timed out, or missing readable price metadata.";
+      : "The source may be blocked, timed out, or missing a readable price.";
     return `Refresh issue: ${reason}`;
   }
 
   if (watch.backendSyncedAt) {
-    return `Backend synced ${formatDate(watch.backendSyncedAt)}. Scheduled checks continue in Netlify.`;
+    return `Synced ${formatDate(watch.backendSyncedAt)}. SmartSave will keep checking.`;
   }
 
   return item.custom
-    ? "Saved locally. Backend email alerts activate after a successful sync."
-    : "Local demo watch only. Demo data is not refreshed by the backend.";
+    ? "Saved locally. Email alerts turn on after sync."
+    : "Local demo watch only. Demo data does not refresh live.";
 }
 
 function renderWatchlist() {
@@ -3272,7 +3277,7 @@ function renderWatchlist() {
         <span class="meta-pill">${escapeHtml(watch.email || "No email")}</span>
         <span class="meta-pill data-badge ${dataMode.className}">${escapeHtml(dataMode.label)}</span>
         ${refreshFailed ? `<span class="meta-pill data-badge status-failed">Refresh Failed</span>` : ""}
-        ${watch.backendSyncedAt ? `<span class="meta-pill">Backend synced</span>` : ""}
+        ${watch.backendSyncedAt ? `<span class="meta-pill">Synced</span>` : ""}
       </div>
       <div class="watchlist-actions">
         <button class="text-button" type="button" data-jump-watch="${itemId}">Open</button>
@@ -3386,8 +3391,8 @@ function renderApp() {
   renderZipMatches();
   renderWatchlist();
   maybeTriggerWatchNotifications();
-  dataModeNote.textContent = "Live workflow: pasted URL trackers are stored in Netlify Blobs and checked hourly. Demo catalog data is labeled separately.";
-  liveRequirementsText.textContent = "The seeded catalog below is demo-only. Use the pasted URL tracker for backend price refreshes and email alerts.";
+  dataModeNote.textContent = "Live workflow: paste a URL, set a target, and SmartSave checks for price drops. Demo data is labeled separately.";
+  liveRequirementsText.textContent = "The seeded catalog below is demo-only. Use the pasted URL tracker for live checks and email alerts.";
 }
 
 function attachEvents() {

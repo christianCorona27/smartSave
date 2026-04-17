@@ -6,7 +6,7 @@
     <title>SmartSave</title>
     <meta
       name="description"
-      content="SmartSave reads a public product page, stores a target price, and sends an email alert when scheduled backend checks find the target price."
+      content="SmartSave tracks public product page prices and alerts you when your target price is reached."
     />
     <meta name="theme-color" content="#07111f" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,12 +23,11 @@
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Live URL price tracking</p>
-          <h1>Stop overpaying. Track the real page price until it drops.</h1>
+          <h1>Stop guessing. Track the price you can actually pay.</h1>
           <p class="hero-text">
-            Paste a public product page, confirm the price SmartSave can read, set your target, and get an email
-            when scheduled checks find the drop.
+            Paste a product URL and SmartSave will monitor it for you. Get alerted when the real price drops to your target.
           </p>
-          <p class="value-line">Save money by tracking real page prices over time, not one-time guesses.</p>
+          <p class="value-line">Prices change constantly and discounts are often hidden. SmartSave helps you track what you can actually pay—not just what’s listed.</p>
           <p class="why-note">
             Why it matters: sale labels, account terms, and checkout timing can hide the price you should wait for.
           </p>
@@ -41,7 +40,7 @@
               </button>
             </div>
             <p class="hero-preview-status" id="heroPreviewStatus">
-              Paste a public product page. SmartSave reads public metadata only and asks you to confirm the result.
+              Paste a public product page. SmartSave reads what it can and asks you to confirm the price.
             </p>
             <div class="hero-preview-panel" id="heroPreviewPanel" hidden>
               <div class="hero-preview-media">
@@ -59,7 +58,7 @@
                     <strong id="heroPreviewPrice" class="hero-preview-price">--</strong>
                   </div>
                   <div>
-                    <span class="provider-label">Value insight</span>
+                    <span class="provider-label">Price Insight</span>
                     <strong id="heroValueInsight" class="hero-value-insight">Waiting for a readable price</strong>
                   </div>
                 </div>
@@ -73,7 +72,7 @@
                     <input id="heroEmailInput" name="alert-email" type="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" />
                   </label>
                 </div>
-                <p class="tracker-gap-note" id="heroTargetDelta">Set a target below the detected price to get a drop alert.</p>
+                <p class="tracker-gap-note" id="heroTargetDelta">Set a target to track changes.</p>
                 <button class="solid-button hero-create-button" id="heroCreateTrackerBtn" type="button">
                   Save Tracker and Email Me
                 </button>
@@ -85,19 +84,19 @@
             <a class="ghost-button hero-demo-link" href="#demoExplorer">Explore demo features</a>
           </div>
           <p class="architecture-note">
-            Architecture: Netlify Functions parse page metadata, Netlify Blobs store trackers, and a scheduled backend check refreshes prices.
+            SmartSave reads public page details, saves your target, and checks later for a lower price.
           </p>
         </div>
         <div class="hero-meter">
           <div class="meter-label">One real workflow</div>
           <ol class="meter-steps workflow-steps">
             <li>Paste a public product URL.</li>
-            <li>SmartSave reads title, price, image, and source metadata when available.</li>
+            <li>SmartSave reads the title, price, image, and source when available.</li>
             <li>You set a target price and email.</li>
-            <li>The scheduled backend re-fetches the page and emails when the target is met.</li>
+            <li>SmartSave checks again and emails when the target is met.</li>
           </ol>
           <p class="meter-footnote" id="dataModeNote">
-            Live trackers use public page metadata. Demo catalog data is separate and labeled as demo-only.
+            Live trackers use pasted URLs. Demo catalog data is separate and labeled as demo-only.
           </p>
           <div class="data-legend hero-data-legend" aria-label="SmartSave data status legend">
             <span class="data-badge status-live">Live Tracker</span>
@@ -118,8 +117,8 @@
               <h2>Track a public product URL</h2>
             </div>
             <p class="panel-text">
-              Use a public product page that exposes price metadata. If a site hides prices behind JavaScript,
-              account login, location, or cart state, SmartSave shows the limitation instead of presenting it as live data.
+              Use a public product page. If a site hides the price behind login, location, or cart steps,
+              SmartSave says so instead of guessing.
             </p>
             <div class="alert-form">
               <label>
@@ -129,7 +128,7 @@
               <button class="ghost-button small-button" id="readUrlBtn" type="button">Read page price</button>
               <label>
                 Extracted title
-                <input id="customNameInput" name="product-title" type="text" autocomplete="off" placeholder="Loaded from page metadata" />
+                <input id="customNameInput" name="product-title" type="text" autocomplete="off" placeholder="Loaded from page" />
               </label>
               <div class="custom-form-grid">
                 <label>
@@ -159,8 +158,8 @@
                 <textarea id="customRequirementsInput"></textarea>
               </div>
               <button class="solid-button small-button" id="addCustomItemBtn" type="button">Save live tracker and email me</button>
-              <p class="tracker-gap-note" id="customTargetDelta">After saving, the backend stores this tracker and checks it on schedule.</p>
-              <p class="history-note" id="customSourceStatus">Paste a URL, extract metadata, then set a target price and email.</p>
+              <p class="tracker-gap-note" id="customTargetDelta">Set a target to track changes.</p>
+              <p class="history-note" id="customSourceStatus">Paste a URL, read the price, then set a target and email.</p>
             </div>
           </section>
 
@@ -170,11 +169,12 @@
               <h2>Live trackers and demo watches</h2>
             </div>
             <p class="panel-text">
-              Live URL trackers sync to the backend. Demo catalog watches stay local in this browser.
+              Live URL trackers save your target. Demo watches stay local in this browser.
             </p>
             <div id="watchlistItems" class="watchlist-items"></div>
           </section>
 
+          <p class="section-kicker demo-section-label">Explore Demo Features (Not Live Data)</p>
           <details class="demo-explorer demo-sidebar-explorer">
             <summary>
               <span>Explore demo controls</span>
@@ -265,12 +265,11 @@
               <span class="data-badge status-failed">Refresh Failed</span>
             </div>
             <p class="panel-text">
-              Demo data is included for exploration and UI testing. Live tracking works only for
-              public product URLs that expose readable price metadata.
+              Demo data is for exploration. Live tracking works only for public product URLs with readable prices.
             </p>
             <ul class="status-list">
-              <li>The URL extraction endpoint reads public HTML metadata from the pasted page.</li>
-              <li>The saved tracker and target price are stored in Netlify Blobs.</li>
+              <li>SmartSave reads public page details from the pasted URL.</li>
+              <li>Your saved tracker includes the URL, target price, and email.</li>
               <li id="liveRequirementsText">The seeded catalog below is demo-only and is not live retailer data.</li>
             </ul>
           </section>
@@ -299,6 +298,7 @@
           </details>
         </aside>
 
+        <p class="section-kicker demo-section-label">Explore Demo Features (Not Live Data)</p>
         <details class="results-area demo-explorer" id="demoExplorer">
           <summary>
             <span>Explore Demo Features</span>

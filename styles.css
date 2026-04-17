@@ -569,7 +569,11 @@ h4 {
 
 .demo-explorer {
   min-width: 0;
-  opacity: 0.84;
+}
+
+.demo-section-label {
+  margin-top: 0.75rem;
+  color: rgba(250, 204, 21, 0.78);
 }
 
 .demo-explorer > summary {
@@ -595,6 +599,19 @@ h4 {
 .demo-explorer[open] > summary {
   border-color: rgba(250, 204, 21, 0.36);
   background: rgba(250, 204, 21, 0.065);
+}
+
+.demo-explorer h2,
+.demo-explorer h3 {
+  font-size: clamp(1.05rem, 1.6vw, 1.32rem);
+}
+
+.demo-explorer .panel,
+.demo-explorer .browse-shell,
+.demo-explorer .catalog-shell,
+.demo-explorer .detail-shell {
+  background: linear-gradient(180deg, rgba(13, 27, 46, 0.72), rgba(7, 17, 31, 0.76));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 }
 
 .demo-explorer > .demo-explainer,
